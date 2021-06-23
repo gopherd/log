@@ -1,0 +1,59 @@
+LOG
+===
+
+`log` is a structured logger library. We have following key features:
+
++ lightweight: no any dependencies.
++ fast: formmating log message very fast.
++ zero-memory: zero memory allocation while formmating log message.
++ customizable: customize `Writer` and `Printer`.
+
+Getting started
+---------------
+
+Install:
+
+```
+go get github.com/gopherd/log
+```
+
+```go
+package main
+
+import (
+	"github.com/gopherd/log"
+)
+
+func main() {
+	// Start and defer Shutdown
+	if err := log.Start(log.WithConsole()); err != nil {
+		panic(err)
+	}
+	defer log.Shutdown()
+
+	// Default log level is log.LvINFO, you can change the level as following:
+	//
+	//	log.SetLevel(log.LvTRACE)
+	// 	log.SetLevel(log.LvDEBUG)
+	// 	log.SetLevel(log.LvINFO)
+	// 	log.SetLevel(log.LvWARN)
+	// 	log.SetLevel(log.LvERROR)
+	// 	log.SetLevel(log.LvFATAL)
+
+	log.Trace().Print("cannot be printed")
+	log.Debug().
+		Int("id", 123).
+		String("name", "gopherd").
+		Print("cannot be printed")
+
+	log.Info("should be printed", "INFO")
+	log.Warn("%s should be printed", "WARN")
+	log.Error("%s should be printed", "ERROR")
+
+	// Set header flags, all supported flags: Ldatetime, Llongfile, Lshortfile, LUTC
+	log.SetFlags(log.Ldatetime | log.Lshorfile | log.LUTC)
+
+	log.Fatal().Print("should be printed and exit program with status code 1")
+	log.Info().Print("You cannot see me")
+}
+```
