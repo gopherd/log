@@ -137,7 +137,6 @@ func ExampleFields() {
 }
 
 func benchmarkSetup(b *testing.B, caller, off bool) {
-	b.StopTimer()
 	writer := new(testingLogWriter)
 	writer.discard = true
 	var options = make([]log.Option, 0, 4)
@@ -156,7 +155,7 @@ func benchmarkSetup(b *testing.B, caller, off bool) {
 		options = append(options, log.WithFlags(log.Ldatetime))
 	}
 	log.Start(options...)
-	b.StartTimer()
+	b.ResetTimer()
 }
 
 func benchmarkTeardown(b *testing.B) {
