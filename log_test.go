@@ -92,6 +92,9 @@ func ExampleFields() {
 	log.Info().Duration("duration", time.Millisecond*1200).Print("fields")
 	log.Info().String("$name", "hello").Print("fields")
 	log.Info().String("name of", "hello").Print("fields")
+	log.Info().Any("int32s", log.Int32s{1, 3, 5}).Print("fields")
+	log.Info().Any("strings", log.Strings{"x", "x y", "z"}).Print("fields")
+	log.Info().Any("bytes", log.Bytes{'1', '3', 'x'}).Print("fields")
 	log.Prefix("prefix").Info().
 		String("k1", "v1").
 		Int("k2", 2).
@@ -133,6 +136,9 @@ func ExampleFields() {
 	// [INFO] (testing) {duration:1.2s} fields
 	// [INFO] (testing) {$name:"hello"} fields
 	// [INFO] (testing) {"name of":"hello"} fields
+	// [INFO] (testing) {int32s:[1,3,5]} fields
+	// [INFO] (testing) {strings:["x","x y","z"]} fields
+	// [INFO] (testing) {bytes:0x313378} fields
 	// [INFO] (testing/prefix) {k1:"v1" k2:2} prefix logging
 }
 
