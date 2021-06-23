@@ -21,6 +21,9 @@ go get github.com/gopherd/log
 package main
 
 import (
+	"errors"
+	"time"
+
 	"github.com/gopherd/log"
 )
 
@@ -39,19 +42,26 @@ func main() {
 	// 	log.SetLevel(log.LvWARN)
 	// 	log.SetLevel(log.LvERROR)
 	// 	log.SetLevel(log.LvFATAL)
+	log.SetLevel(log.LvTRACE)
 
-	log.Trace().Print("cannot be printed")
+	log.Trace().Print("verbose message")
 	log.Debug().
 		Int("id", 123).
 		String("name", "gopherd").
-		Print("cannot be printed")
+		Print("debug message")
 
-	log.Info("should be printed", "INFO")
-	log.Warn("%s should be printed", "WARN")
-	log.Error("%s should be printed", "ERROR")
+	log.Info().
+		Int32("i32", -12).
+		Print("important message")
+	log.Warn().
+		Duration("duration", time.Second).
+		Print("warning: cost to much time")
+	log.Error().
+		Error("error", errors.New("EOF")).
+		Print("something is wrong")
 
 	// Set header flags, all supported flags: Ldatetime, Llongfile, Lshortfile, LUTC
-	log.SetFlags(log.Ldatetime | log.Lshorfile | log.LUTC)
+	log.SetFlags(log.Ldatetime | log.Lshortfile | log.LUTC)
 
 	log.Fatal().Print("should be printed and exit program with status code 1")
 	log.Info().Print("You cannot see me")
