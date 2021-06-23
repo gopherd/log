@@ -15,9 +15,7 @@ import (
 )
 
 var (
-	pid           = os.Getpid()
-	errNilWriter  = errors.New("nil writer")
-	errOutOfRange = errors.New("out of range")
+	errNilWriter = errors.New("log: nil writer")
 )
 
 // Writer represents a writer for logging
@@ -205,27 +203,38 @@ type file struct {
 	writer  *bufio.Writer
 	file    File
 	written bool
+	quit    chan struct{}
 }
 
-func newFile(options FileOptions) *file {
+func newFile(options FileOptions) (*file, error) {
 	options.setDefaults()
 	w := &file{
 		options:   options,
 		fileIndex: -1,
+		quit:      make(chan struct{}),
 	}
-	w.rotate(time.Now())
+	if err := w.rotate(time.Now()); err != nil {
+		return nil, err
+	}
 	go func(f *file) {
-		for range time.Tick(time.Second) {
-			f.mu.Lock()
-			if f.written {
-				f.writer.Flush()
-				f.file.Sync()
-				f.written = false
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				f.mu.Lock()
+				if f.written {
+					f.writer.Flush()
+					f.file.Sync()
+					f.written = false
+				}
+				f.mu.Unlock()
+			case <-f.quit:
+				return
 			}
-			f.mu.Unlock()
 		}
 	}(w)
-	return w
+	return w, nil
 }
 
 // Write writes log to file
@@ -270,6 +279,7 @@ func (w *file) closeCurrent() error {
 
 // Close closes current log file
 func (w *file) Close() error {
+	close(w.quit)
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.closeCurrent()
@@ -321,7 +331,7 @@ func (w *file) create() (File, error) {
 		name = fmt.Sprintf("%s%s", prefix, date)
 	} else {
 		H, M, _ := w.createdTime.Clock()
-		name = fmt.Sprintf("%s%s-%02d%02d.%06d", prefix, date, H, M, pid)
+		name = fmt.Sprintf("%s%s-%02d%02d.%06d", prefix, date, H, M, os.Getpid())
 	}
 	if w.fileIndex > 0 {
 		name = fmt.Sprintf("%s.%03d", name, w.fileIndex)
@@ -451,9 +461,12 @@ func (w *multiFile) Close() error {
 func (w *multiFile) initForLevel(level Level) error {
 	index := level.index()
 	if index < 0 || index >= len(w.files) {
-		return errOutOfRange
+		return errUnrecognizedLevel
 	}
-	f := newFile(w.optionsOfLevel(level))
+	f, err := newFile(w.optionsOfLevel(level))
+	if err != nil {
+		return err
+	}
 	w.files[index] = f
 	if levels, ok := w.group[absPath(f.options.Dir)]; ok {
 		for _, lv := range levels {

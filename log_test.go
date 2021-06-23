@@ -150,9 +150,9 @@ func benchmarkSetup(b *testing.B, caller, off bool) {
 		options = append(options, log.WithLevel(log.LvDEBUG))
 	}
 	if caller {
-		options = append(options, log.WithFlags(log.Lshortfile|log.Ldatetime))
+		options = append(options, log.WithFlags(log.Lshortfile|log.Ldatetime|log.LUTC))
 	} else {
-		options = append(options, log.WithFlags(log.Ldatetime))
+		options = append(options, log.WithFlags(log.Ldatetime|log.LUTC))
 	}
 	log.Start(options...)
 	b.ResetTimer()
