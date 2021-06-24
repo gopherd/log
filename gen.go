@@ -1,8 +1,8 @@
 // +build gopherdloggen
 
-// command to generate types.go
+// command to generate slice.go
 //
-//	go run gen.go > types.go
+//	go run gen.go > slice.go
 //
 package main
 

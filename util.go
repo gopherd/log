@@ -80,7 +80,7 @@ func (b *jsonx) encodeKey(key string) {
 	if len(b.buf) == 0 {
 		b.writeByte('{')
 	} else {
-		b.writeByte(' ')
+		b.writeByte(',')
 	}
 	if isIdent(key) {
 		b.buf = append(b.buf, key...)

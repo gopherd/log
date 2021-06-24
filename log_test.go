@@ -139,7 +139,7 @@ func ExampleFields() {
 	// [INFO] (testing) {int32s:[1,3,5]} fields
 	// [INFO] (testing) {strings:["x","x y","z"]} fields
 	// [INFO] (testing) {bytes:0x313378} fields
-	// [INFO] (testing/prefix) {k1:"v1" k2:2} prefix logging
+	// [INFO] (testing/prefix) {k1:"v1",k2:2} prefix logging
 }
 
 func benchmarkSetup(b *testing.B, caller, off bool) {
