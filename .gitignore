@@ -1,0 +1,11 @@
+*.swo
+*.swp
+~*
+.DS_Store
+.vs/
+.vscode/
+.idea/
+*.exe
+
+/cmd/loglint/loglint
+/cmd/loglint/loglint.exe
