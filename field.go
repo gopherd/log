@@ -6,14 +6,13 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"unicode"
 )
 
 // Fields holds context fields
 type Fields struct {
 	level   Level
 	prefix  string
-	builder builder
+	encoder jsonx
 }
 
 var fieldsPool = sync.Pool{
@@ -32,7 +31,7 @@ func getFields(level Level, prefix Prefix) *Fields {
 }
 
 func putFields(fields *Fields) {
-	if fields.builder.Cap() < 1024 {
+	if fields.encoder.Cap() < 1024 {
 		fieldsPool.Put(fields)
 	}
 }
@@ -40,38 +39,7 @@ func putFields(fields *Fields) {
 func (fields *Fields) reset(level Level, prefix string) {
 	fields.level = level
 	fields.prefix = prefix
-	fields.builder.reset()
-}
-
-func isIdent(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-	for i, c := range s {
-		if !isIdentRune(c, i) {
-			return false
-		}
-	}
-	return true
-}
-
-func isIdentRune(ch rune, i int) bool {
-	return ch == '_' || ch == '-' || ch == '.' || ch == '#' || ch == '$' || ch == '/' ||
-		unicode.IsLetter(ch) || unicode.IsDigit(ch)
-}
-
-func (fields *Fields) writeKey(key string) {
-	if fields.builder.Len() == 0 {
-		fields.builder.writeByte('{')
-	} else {
-		fields.builder.writeByte(' ')
-	}
-	if isIdent(key) {
-		fields.builder.writeString(key)
-	} else {
-		fields.builder.writeQuotedString(key)
-	}
-	fields.builder.writeByte(':')
+	fields.encoder.reset()
 }
 
 // Print prints logging with context fields. After this call,
@@ -80,167 +48,163 @@ func (fields *Fields) Print(s string) {
 	if fields == nil {
 		return
 	}
-	if fields.builder.Len() > 0 {
-		fields.builder.writeString("} ")
-	}
-	fields.builder.writeString(s)
-	gprinter.Printf(1, fields.level, fields.prefix, fields.builder.String())
+	fields.encoder.finish()
+	fields.encoder.writeString(s)
+	gprinter.Printf(1, fields.level, fields.prefix, fields.encoder.String())
 	putFields(fields)
 }
 
 func (fields *Fields) Int(key string, value int) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeInt(int64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeInt(int64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Int8(key string, value int8) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeInt(int64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeInt(int64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Int16(key string, value int16) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeInt(int64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeInt(int64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Int32(key string, value int32) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeInt(int64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeInt(int64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Int64(key string, value int64) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeInt(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeInt(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Uint(key string, value uint) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeUint(uint64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeUint(uint64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Uint8(key string, value uint8) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeUint(uint64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeUint(uint64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Uint16(key string, value uint16) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeUint(uint64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeUint(uint64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Uint32(key string, value uint32) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeUint(uint64(value))
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeUint(uint64(value))
 	}
 	return fields
 }
 
 func (fields *Fields) Uint64(key string, value uint64) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeUint(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeUint(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Float32(key string, value float32) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeFloat32(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeFloat32(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Float64(key string, value float64) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeFloat64(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeFloat64(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Complex64(key string, value complex64) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeComplex64(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeComplex64(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Complex128(key string, value complex128) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeComplex128(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeComplex128(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Byte(key string, value byte) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeByte('\'')
-		fields.builder.writeByte(value)
-		fields.builder.writeByte('\'')
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeByte(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Rune(key string, value rune) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.buf = strconv.AppendQuoteRune(fields.builder.buf, value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeRune(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Bool(key string, value bool) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeBool(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeBool(value)
 	}
 	return fields
 }
 
 func (fields *Fields) String(key string, value string) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeQuotedString(value)
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeString(value)
 	}
 	return fields
 }
 
 func (fields *Fields) Error(key string, value error) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
+		fields.encoder.encodeKey(key)
 		if value == nil {
-			fields.builder.writeString("nil")
+			fields.encoder.encodeNil()
 		} else {
-			fields.builder.buf = strconv.AppendQuote(fields.builder.buf, value.Error())
+			fields.encoder.buf = strconv.AppendQuote(fields.encoder.buf, value.Error())
 		}
 	}
 	return fields
@@ -248,22 +212,22 @@ func (fields *Fields) Error(key string, value error) *Fields {
 
 func (fields *Fields) Any(key string, value interface{}) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
+		fields.encoder.encodeKey(key)
 		if value == nil {
-			fields.builder.writeString("nil")
+			fields.encoder.encodeNil()
 		} else {
 			switch x := value.(type) {
 			case error:
-				fields.builder.writeQuotedString(x.Error())
+				fields.encoder.encodeString(x.Error())
 			case fmt.Stringer:
-				fields.builder.writeQuotedString(x.String())
+				fields.encoder.encodeString(x.String())
 			case string:
-				fields.builder.writeQuotedString(x)
+				fields.encoder.encodeString(x)
 			case appendFormatter:
-				fields.builder.buf = x.AppendFormat(fields.builder.buf)
+				fields.encoder.buf = x.AppendFormat(fields.encoder.buf)
 			default:
-				if !fields.builder.tryWriteScalar(value) {
-					fields.builder.writeQuotedString(fmt.Sprintf("%v", value))
+				if !fields.encoder.encodeScalar(value) {
+					fields.encoder.encodeString(fmt.Sprintf("%v", value))
 				}
 			}
 		}
@@ -273,11 +237,11 @@ func (fields *Fields) Any(key string, value interface{}) *Fields {
 
 func (fields *Fields) Type(key string, value interface{}) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
+		fields.encoder.encodeKey(key)
 		if value == nil {
-			fields.builder.writeString(`"nil"`)
+			fields.encoder.encodeString("nil")
 		} else {
-			fields.builder.writeQuotedString(reflect.TypeOf(value).String())
+			fields.encoder.encodeString(reflect.TypeOf(value).String())
 		}
 	}
 	return fields
@@ -285,16 +249,18 @@ func (fields *Fields) Type(key string, value interface{}) *Fields {
 
 func (fields *Fields) Exec(key string, stringer func() string) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.writeQuotedString(stringer())
+		fields.encoder.encodeKey(key)
+		fields.encoder.encodeString(stringer())
 	}
 	return fields
 }
 
 func (fields *Fields) writeTime(key string, value time.Time, layout string) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
-		fields.builder.buf = value.AppendFormat(fields.builder.buf, layout)
+		fields.encoder.encodeKey(key)
+		fields.encoder.buf = append(fields.encoder.buf, '"')
+		fields.encoder.buf = value.AppendFormat(fields.encoder.buf, layout)
+		fields.encoder.buf = append(fields.encoder.buf, '"')
 	}
 	return fields
 }
@@ -321,14 +287,14 @@ func (fields *Fields) Microseconds(key string, value time.Time) *Fields {
 
 func (fields *Fields) Duration(key string, value time.Duration) *Fields {
 	if fields != nil {
-		fields.writeKey(key)
+		fields.encoder.encodeKey(key)
 		const reserved = 32
-		l := len(fields.builder.buf)
-		if cap(fields.builder.buf)-l < reserved {
-			fields.builder.grow(reserved)
+		l := len(fields.encoder.buf)
+		if cap(fields.encoder.buf)-l < reserved {
+			fields.encoder.grow(reserved)
 		}
-		n := formatDuration(fields.builder.buf[l:l+reserved], value)
-		fields.builder.buf = fields.builder.buf[:l+n]
+		n := formatDuration(fields.encoder.buf[l:l+reserved], value)
+		fields.encoder.buf = fields.encoder.buf[:l+n]
 	}
 	return fields
 }

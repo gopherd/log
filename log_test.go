@@ -92,9 +92,9 @@ func ExampleFields() {
 	log.Info().Duration("duration", time.Millisecond*1200).Print("fields")
 	log.Info().String("$name", "hello").Print("fields")
 	log.Info().String("name of", "hello").Print("fields")
-	log.Info().Any("int32s", log.Int32s{1, 3, 5}).Print("fields")
-	log.Info().Any("strings", log.Strings{"x", "x y", "z"}).Print("fields")
-	log.Info().Any("bytes", log.Bytes{'1', '3', 'x'}).Print("fields")
+	log.Info().Int32s("int32s", []int32{1, 3, 5}).Print("fields")
+	log.Info().Strings("strings", []string{"x", "x y", "z"}).Print("fields")
+	log.Info().Bytes("bytes", []byte{'1', '3', 'x'}).Print("fields")
 	log.Prefix("prefix").Info().
 		String("k1", "v1").
 		Int("k2", 2).
@@ -131,8 +131,8 @@ func ExampleFields() {
 	// [INFO] (testing) {type:"nil"} fields
 	// [INFO] (testing) {type:"string"} fields
 	// [INFO] (testing) {type:"*int"} fields
-	// [INFO] (testing) {date:2020-05-01+08:00} fields
-	// [INFO] (testing) {time:2020-05-01T12:20:30.123456789+08:00} fields
+	// [INFO] (testing) {date:"2020-05-01+08:00"} fields
+	// [INFO] (testing) {time:"2020-05-01T12:20:30.123456789+08:00"} fields
 	// [INFO] (testing) {duration:1.2s} fields
 	// [INFO] (testing) {$name:"hello"} fields
 	// [INFO] (testing) {"name of":"hello"} fields

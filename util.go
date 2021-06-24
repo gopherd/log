@@ -3,156 +3,196 @@ package log
 import (
 	"strconv"
 	"time"
-	"unicode/utf8"
+	"unicode"
 	"unsafe"
 )
 
 const hex = "0123456789abcdef"
 
-// builder used to build string
-type builder struct {
+func isIdent(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for i, c := range s {
+		if !isIdentRune(c, i) {
+			return false
+		}
+	}
+	return true
+}
+
+func isIdentRune(ch rune, i int) bool {
+	return ch == '_' || ch == '-' || ch == '.' || ch == '#' || ch == '$' || ch == '/' ||
+		unicode.IsLetter(ch) || unicode.IsDigit(ch)
+}
+
+// jsonx used to build json with some extra features:
+//
+// 1. support unqutoed key
+// 2. support literal complex, e.g. 1.5+2i, 2i
+// 3. support literal duration, e.g. 1s, 1ms
+// 4. support literal nil
+// 5. support bytes starts with 0x
+type jsonx struct {
 	buf []byte
 }
 
 // String returns the accumulated string.
-func (b *builder) String() string {
+func (b *jsonx) String() string {
 	return *(*string)(unsafe.Pointer(&b.buf))
 }
 
 // Len returns the number of accumulated bytes; b.Len() == len(b.String()).
-func (b *builder) Len() int { return len(b.buf) }
+func (b *jsonx) Len() int { return len(b.buf) }
 
 // Cap returns the capacity of the builder's underlying byte slice. It is the
 // total space allocated for the string being built and includes any bytes
 // already written.
-func (b *builder) Cap() int { return cap(b.buf) }
+func (b *jsonx) Cap() int { return cap(b.buf) }
 
-func (b *builder) reset() {
+// Write implements io.Writer Write method
+func (b *jsonx) Write(p []byte) (int, error) {
+	b.buf = append(b.buf, p...)
+	return len(p), nil
+}
+
+func (b *jsonx) reset() {
 	b.buf = b.buf[:0]
 }
 
 // grow copies the buffer to a new, larger buffer so that there are at least n
 // bytes of capacity beyond len(b.buf).
-func (b *builder) grow(n int) {
+func (b *jsonx) grow(n int) {
 	buf := make([]byte, len(b.buf), 2*cap(b.buf)+n)
 	copy(buf, b.buf)
 	b.buf = buf
 }
 
-func (b *builder) Write(p []byte) (int, error) {
-	b.buf = append(b.buf, p...)
-	return len(p), nil
-}
-
-func (b *builder) writeByte(c byte) {
+func (b *jsonx) writeByte(c byte) {
 	b.buf = append(b.buf, c)
 }
 
-func (b *builder) writeRune(r rune) {
-	if r < utf8.RuneSelf {
-		b.buf = append(b.buf, byte(r))
-		return
-	}
-	l := len(b.buf)
-	if cap(b.buf)-l < utf8.UTFMax {
-		b.grow(utf8.UTFMax)
-	}
-	n := utf8.EncodeRune(b.buf[l:l+utf8.UTFMax], r)
-	b.buf = b.buf[:l+n]
-}
-
-func (b *builder) writeString(s string) {
+func (b *jsonx) writeString(s string) {
 	b.buf = append(b.buf, s...)
 }
 
-func (b *builder) writeQuotedString(s string) {
+func (b *jsonx) encodeKey(key string) {
+	if len(b.buf) == 0 {
+		b.writeByte('{')
+	} else {
+		b.writeByte(' ')
+	}
+	if isIdent(key) {
+		b.buf = append(b.buf, key...)
+	} else {
+		b.encodeString(key)
+	}
+	b.writeByte(':')
+}
+
+func (b *jsonx) finish() {
+	if len(b.buf) > 0 {
+		b.buf = append(b.buf, '}', ' ')
+	}
+}
+
+func (b *jsonx) encodeNil() {
+	b.buf = append(b.buf, "nil"...)
+}
+
+func (b *jsonx) encodeByte(c byte) {
+	b.buf = append(b.buf, '\'', c, '\'')
+}
+
+func (b *jsonx) encodeRune(r rune) {
+	b.buf = strconv.AppendQuoteRune(b.buf, r)
+}
+
+func (b *jsonx) encodeString(s string) {
 	b.buf = strconv.AppendQuote(b.buf, s)
 }
 
-func (b *builder) writeInt(i int64) {
+func (b *jsonx) encodeInt(i int64) {
 	b.buf = strconv.AppendInt(b.buf, i, 10)
 }
 
-func (b *builder) writeUint(i uint64) {
+func (b *jsonx) encodeUint(i uint64) {
 	b.buf = strconv.AppendUint(b.buf, i, 10)
 }
 
-func (b *builder) writeFloat32(f float32) {
-	b.buf = strconv.AppendFloat(b.buf, float64(f), 'f', -1, 32)
+func (b *jsonx) encodeFloat(f float64, bits int) {
+	b.buf = strconv.AppendFloat(b.buf, f, 'f', -1, bits)
 }
 
-func (b *builder) writeFloat64(f float64) {
-	b.buf = strconv.AppendFloat(b.buf, f, 'f', -1, 64)
+func (b *jsonx) encodeFloat32(f float32) {
+	b.encodeFloat(float64(f), 32)
 }
 
-func (b *builder) writeBool(v bool) {
+func (b *jsonx) encodeFloat64(f float64) {
+	b.encodeFloat(f, 64)
+}
+
+func (b *jsonx) encodeBool(v bool) {
 	b.buf = strconv.AppendBool(b.buf, v)
 }
 
-func (b *builder) writeComplex64(c complex64) {
-	r, i := real(c), imag(c)
+func (b *jsonx) encodeComplex(r, i float64, bits int) {
 	if r != 0 {
-		b.writeFloat32(r)
+		b.encodeFloat(r, bits)
 	}
 	if i != 0 {
 		if r != 0 {
 			b.buf = append(b.buf, '+')
 		}
-		b.writeFloat32(i)
+		b.encodeFloat(i, bits)
 		b.buf = append(b.buf, 'i')
 	} else if r == 0 {
 		b.buf = append(b.buf, '0')
 	}
 }
 
-func (b *builder) writeComplex128(c complex128) {
+func (b *jsonx) encodeComplex64(c complex64) {
 	r, i := real(c), imag(c)
-	if r != 0 {
-		b.writeFloat64(r)
-	}
-	if i != 0 {
-		if r != 0 {
-			b.buf = append(b.buf, '+')
-		}
-		b.writeFloat64(i)
-		b.buf = append(b.buf, 'i')
-	} else if r == 0 {
-		b.buf = append(b.buf, '0')
-	}
+	b.encodeComplex(float64(r), float64(i), 32)
 }
 
-func (b *builder) tryWriteScalar(value interface{}) bool {
+func (b *jsonx) encodeComplex128(c complex128) {
+	r, i := real(c), imag(c)
+	b.encodeComplex(r, i, 64)
+}
+
+func (b *jsonx) encodeScalar(value interface{}) bool {
 	switch x := value.(type) {
 	case int:
-		b.writeInt(int64(x))
+		b.encodeInt(int64(x))
 	case int8:
-		b.writeInt(int64(x))
+		b.encodeInt(int64(x))
 	case int16:
-		b.writeInt(int64(x))
+		b.encodeInt(int64(x))
 	case int32:
-		b.writeInt(int64(x))
+		b.encodeInt(int64(x))
 	case int64:
-		b.writeInt(x)
+		b.encodeInt(x)
 	case uint:
-		b.writeUint(uint64(x))
+		b.encodeUint(uint64(x))
 	case uint8:
-		b.writeUint(uint64(x))
+		b.encodeUint(uint64(x))
 	case uint16:
-		b.writeUint(uint64(x))
+		b.encodeUint(uint64(x))
 	case uint32:
-		b.writeUint(uint64(x))
+		b.encodeUint(uint64(x))
 	case uint64:
-		b.writeUint(x)
+		b.encodeUint(x)
 	case float32:
-		b.writeFloat32(x)
+		b.encodeFloat32(x)
 	case float64:
-		b.writeFloat64(x)
+		b.encodeFloat64(x)
 	case bool:
-		b.writeBool(x)
+		b.encodeBool(x)
 	case complex64:
-		b.writeComplex64(x)
+		b.encodeComplex64(x)
 	case complex128:
-		b.writeComplex128(x)
+		b.encodeComplex128(x)
 	default:
 		return false
 	}
