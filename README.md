@@ -67,3 +67,25 @@ func main() {
 	log.Info().Print("You cannot see me")
 }
 ```
+
+## Linter: [loglint](https://github.com/gopherd/log/tree/main/cmd/loglint)
+
+install loglint:
+
+```
+go install github.com/gopherd/log/cmd/loglint
+```
+
+loglint used to check unfinished chain calls, e.g.
+
+```go
+// wrong
+log.Debug()                              // warning: result of github.com/gopherd/log.Debug call not used
+log.Prefix("pre").Trace()                // warning: result of (github.com/gopherd/log.Prefix).Trace call not used
+log.Debug().String("k", "v")             // warning: result of (*github.com/gopherd/log.Fields).String call not used
+log.Debug().Int("i", 1).String("k", "v") // warning: result of (*github.com/gopherd/log.Fields).String call not used
+
+// right
+log.Debug().String("k", "v").Print("message")
+log.Debug().Print("message")
+```
