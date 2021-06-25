@@ -739,14 +739,9 @@ func WithWriters(writers ...Writer) Option {
 	}
 }
 
-// WithConsole appends a console writer
-func WithConsole() Option {
-	return WithWriters(newConsole(os.Stdout, os.Stderr, LvERROR))
-}
-
 // WithOutput appends a console writer with specified io.Writer
 func WithOutput(w io.Writer) Option {
-	return WithWriters(newConsole(w, w, LvERROR))
+	return WithWriters(newConsole(w))
 }
 
 // WithFile appends a file writer

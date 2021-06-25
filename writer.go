@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +26,57 @@ type Writer interface {
 	Close() error
 }
 
+type WriterCreator func(source string) (Writer, error)
+
+var (
+	writerCreatorsMu sync.RWMutex
+	writerCreators   = make(map[string]WriterCreator)
+)
+
+func init() {
+	Register("console", openConsole)
+	Register("file", openFile)
+	Register("multifile", openMultiFile)
+}
+
+func Register(name string, creator WriterCreator) {
+	if creator == nil {
+		panic("log: Register creator is nil")
+	}
+	writerCreatorsMu.Lock()
+	defer writerCreatorsMu.Unlock()
+	if _, dup := writerCreators[name]; dup {
+		panic("log: Register called twice for " + name)
+	}
+	writerCreators[name] = creator
+}
+
+func Open(url string) (Writer, error) {
+	var (
+		name   string
+		source string
+	)
+	i := strings.Index(url, ":")
+	if i < 0 {
+		name = url
+	} else {
+		name = url[:i]
+		source = url[i+1:]
+	}
+	if name == "" {
+		return nil, errors.New("log: writer name is empty, url format: `name[:source]`")
+	}
+
+	writerCreatorsMu.RLock()
+	creator, ok := writerCreators[name]
+	writerCreatorsMu.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("log: unknown writer %q (forgotten import?)", name)
+	}
+	return creator(source)
+}
+
+// multiWriter merges multi-writers
 type multiWriter struct {
 	writers []Writer
 }
@@ -52,27 +105,30 @@ func (w multiWriter) Close() error {
 
 // console is a writer that writes logs to console
 type console struct {
-	toStderrLevel Level     // level which write to stderr from
-	stdout        io.Writer // os.Stdout used if nil
-	stderr        io.Writer // os.Stderr used if nil
+	w io.Writer
 }
 
 // newConsole creates a console writer
-func newConsole(stdout, stderr io.Writer, toStderrLevel Level) *console {
+func newConsole(w io.Writer) *console {
 	return &console{
-		toStderrLevel: toStderrLevel,
-		stdout:        os.Stdout,
-		stderr:        os.Stderr,
+		w: w,
+	}
+}
+
+func openConsole(source string) (Writer, error) {
+	switch source {
+	case "stdout":
+		return newConsole(os.Stdout), nil
+	case "", "stderr":
+		return newConsole(os.Stderr), nil
+	default:
+		return nil, errors.New("log: invalid source for console: " + source)
 	}
 }
 
 // Write implements Writer Write method
 func (w *console) Write(level Level, data []byte, _ int) error {
-	if level <= w.toStderrLevel {
-		_, err := w.stderr.Write(data)
-		return err
-	}
-	_, err := w.stdout.Write(data)
+	_, err := w.w.Write(data)
 	return err
 }
 
@@ -185,6 +241,8 @@ func (opts *FileOptions) setDefaults() {
 	}
 	if opts.SymlinkedDir == "" {
 		opts.SymlinkedDir = "symlinked"
+	} else if opts.SymlinkedDir == "-" {
+		opts.SymlinkedDir = ""
 	}
 	if opts.FS == nil {
 		opts.FS = defaultFS
@@ -235,6 +293,41 @@ func newFile(options FileOptions) (*file, error) {
 		}
 	}(w)
 	return w, nil
+}
+
+func parseFileSource(opt *FileOptions, source string) (url.Values, error) {
+	i := strings.Index(source, "?")
+	if i <= 0 {
+		return nil, errors.New("log: invalid source for file: " + source)
+	}
+	opt.Dir, opt.Filename = filepath.Split(source[:i])
+	if opt.Filename == "" {
+		return nil, errors.New("log: invalid source for file: " + source)
+	}
+	opt.Dir = filepath.Clean(opt.Dir)
+	q, err := url.ParseQuery(source[i+1:])
+	if err != nil {
+		return nil, errors.New("log: invalid source for file: " + source)
+	}
+	opt.SymlinkedDir = q.Get("symlinkeddir")
+	opt.NoSymlink, _ = strconv.ParseBool(q.Get("nosymlink"))
+	opt.MaxSize, _ = strconv.Atoi(q.Get("maxsize"))
+	opt.Rotate, _ = strconv.ParseBool(q.Get("rotate"))
+	opt.Suffix = q.Get("suffix")
+	opt.DateFormat = q.Get("dateformat")
+	header, _ := strconv.Atoi(q.Get("header"))
+	opt.Header = FileHeader(header)
+	return q, nil
+}
+
+// source format: path/to/file?k1=v1&...&kn=vn
+func openFile(source string) (Writer, error) {
+	var opt FileOptions
+	_, err := parseFileSource(&opt, source)
+	if err != nil {
+		return nil, err
+	}
+	return newFile(opt)
 }
 
 // Write writes log to file
@@ -349,10 +442,13 @@ func (w *file) create() (File, error) {
 	if !w.options.NoSymlink {
 		fullname = filepath.Join(w.options.Dir, w.options.SymlinkedDir, name)
 	}
-	if w.options.Rotate {
-		f, err = w.options.FS.OpenFile(fullname, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	} else {
-		f, err = w.options.FS.OpenFile(fullname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	err = os.MkdirAll(filepath.Dir(fullname), 0755)
+	if err == nil {
+		if w.options.Rotate {
+			f, err = w.options.FS.OpenFile(fullname, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		} else {
+			f, err = w.options.FS.OpenFile(fullname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+		}
 	}
 	if err == nil && !w.options.NoSymlink {
 		tmp := w.options.Filename
@@ -434,6 +530,22 @@ func newMultiFile(options MultiFileOptions) *multiFile {
 		}
 	}
 	return w
+}
+
+// source format: path/to/file?k1=v1&...&kn=vn
+func openMultiFile(source string) (Writer, error) {
+	var opt MultiFileOptions
+	q, err := parseFileSource(&opt.FileOptions, source)
+	if err != nil {
+		return nil, err
+	}
+	opt.FatalDir = q.Get("fataldir")
+	opt.ErrorDir = q.Get("errordir")
+	opt.WarnDir = q.Get("warndir")
+	opt.InfoDir = q.Get("infodir")
+	opt.DebugDir = q.Get("debugdir")
+	opt.TraceDir = q.Get("tracedir")
+	return newMultiFile(opt), nil
 }
 
 func (w *multiFile) Write(level Level, data []byte, headerLen int) error {
