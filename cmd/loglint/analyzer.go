@@ -22,7 +22,7 @@ func unparen(e ast.Expr) ast.Expr {
 	}
 }
 
-const Doc = `check for unused results of calls log.Fields methods.`
+const Doc = `check for github.com/gopherd/log unfinished chain calls.`
 
 var analyzer = &analysis.Analyzer{
 	Name:     "loglint",
@@ -35,8 +35,6 @@ var analyzer = &analysis.Analyzer{
 var funcs, methods stringSetFlag
 
 func init() {
-	// TODO(adonovan): provide a comment syntax to allow users to
-	// add their functions to this set using facts.
 	var sb strings.Builder
 
 	for i, f := range allFuncs {
@@ -47,8 +45,6 @@ func init() {
 		sb.WriteString(f)
 	}
 	funcs.Set(sb.String())
-	analyzer.Flags.Var(&funcs, "funcs",
-		"comma-separated list of functions whose results must be used")
 
 	sb.Reset()
 	for i, m := range allMethods {
@@ -70,8 +66,6 @@ func init() {
 		sb.WriteString(m)
 	}
 	methods.Set(sb.String())
-	analyzer.Flags.Var(&methods, "methods",
-		"comma-separated list of names of methods whose results must be used")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -112,7 +106,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if obj, ok := obj.(*types.Func); ok {
 				qname := obj.Pkg().Path() + "." + obj.Name()
 				if funcs[qname] {
-					pass.Reportf(call.Lparen, "result of %v call not used", qname)
+					pass.Reportf(call.Lparen, "result of %s call not used", qname)
 				}
 			}
 		}

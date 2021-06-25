@@ -1,4 +1,4 @@
-package testdata
+package a
 
 import "github.com/gopherd/log"
 
