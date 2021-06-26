@@ -727,27 +727,21 @@ func SetLevel(level Level) {
 }
 
 // Trace creates a context fields with level trace
-//loglint: Trace
 func Trace() *Fields { return getFields(LvTRACE, "") }
 
 // Debug creates a context fields with level debug
-//loglint: Debug
 func Debug() *Fields { return getFields(LvDEBUG, "") }
 
 // Info creates a context fields with level info
-//loglint: Info
 func Info() *Fields { return getFields(LvINFO, "") }
 
 // Warn creates a context fields with level warn
-//loglint: Warn
 func Warn() *Fields { return getFields(LvWARN, "") }
 
 // Error creates a context fields with level error
-//loglint: Error
 func Error() *Fields { return getFields(LvERROR, "") }
 
 // Fatal creates a context fields with level fatal
-//loglint: Fatal
 func Fatal() *Fields { return getFields(LvFATAL, "") }
 
 // Printf wraps the global printer Printf method
@@ -784,27 +778,21 @@ func Log(calldepth int, level Level, prefix, format string, args ...interface{})
 type Prefix string
 
 // Trace creates a context fields with level trace
-//loglint:method Prefix.Trace
 func (p Prefix) Trace() *Fields { return getFields(LvTRACE, p) }
 
 // Debug creates a context fields with level debug
-//loglint:method Prefix.Debug
 func (p Prefix) Debug() *Fields { return getFields(LvDEBUG, p) }
 
 // Info creates a context fields with level info
-//loglint:method Prefix.Info
 func (p Prefix) Info() *Fields { return getFields(LvINFO, p) }
 
 // Warn creates a context fields with level warn
-//loglint:method Prefix.Warn
 func (p Prefix) Warn() *Fields { return getFields(LvWARN, p) }
 
 // Error creates a context fields with level error
-//loglint:method Prefix.Error
 func (p Prefix) Error() *Fields { return getFields(LvERROR, p) }
 
 // Fatal creates a context fields with level fatal
-//loglint:method Prefix.Fatal
 func (p Prefix) Fatal() *Fields { return getFields(LvFATAL, p) }
 
 // Printf wraps the global printer Printf method

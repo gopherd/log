@@ -62,7 +62,6 @@ func (fields *Fields) Print(s string) {
 	putFields(fields)
 }
 
-//loglint:method Int
 func (fields *Fields) Int(key string, value int) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -71,7 +70,6 @@ func (fields *Fields) Int(key string, value int) *Fields {
 	return fields
 }
 
-//loglint:method Int8
 func (fields *Fields) Int8(key string, value int8) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -80,7 +78,6 @@ func (fields *Fields) Int8(key string, value int8) *Fields {
 	return fields
 }
 
-//loglint:method Int16
 func (fields *Fields) Int16(key string, value int16) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -89,7 +86,6 @@ func (fields *Fields) Int16(key string, value int16) *Fields {
 	return fields
 }
 
-//loglint:method Int32
 func (fields *Fields) Int32(key string, value int32) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -98,7 +94,6 @@ func (fields *Fields) Int32(key string, value int32) *Fields {
 	return fields
 }
 
-//loglint:method Int64
 func (fields *Fields) Int64(key string, value int64) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -107,7 +102,6 @@ func (fields *Fields) Int64(key string, value int64) *Fields {
 	return fields
 }
 
-//loglint:method Uint
 func (fields *Fields) Uint(key string, value uint) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -116,7 +110,6 @@ func (fields *Fields) Uint(key string, value uint) *Fields {
 	return fields
 }
 
-//loglint:method Uint8
 func (fields *Fields) Uint8(key string, value uint8) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -125,7 +118,6 @@ func (fields *Fields) Uint8(key string, value uint8) *Fields {
 	return fields
 }
 
-//loglint:method Uint16
 func (fields *Fields) Uint16(key string, value uint16) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -134,7 +126,6 @@ func (fields *Fields) Uint16(key string, value uint16) *Fields {
 	return fields
 }
 
-//loglint:method Uint32
 func (fields *Fields) Uint32(key string, value uint32) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -143,7 +134,6 @@ func (fields *Fields) Uint32(key string, value uint32) *Fields {
 	return fields
 }
 
-//loglint:method Uint64
 func (fields *Fields) Uint64(key string, value uint64) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -152,7 +142,6 @@ func (fields *Fields) Uint64(key string, value uint64) *Fields {
 	return fields
 }
 
-//loglint:method Float32
 func (fields *Fields) Float32(key string, value float32) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -161,7 +150,6 @@ func (fields *Fields) Float32(key string, value float32) *Fields {
 	return fields
 }
 
-//loglint:method Float64
 func (fields *Fields) Float64(key string, value float64) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -170,7 +158,6 @@ func (fields *Fields) Float64(key string, value float64) *Fields {
 	return fields
 }
 
-//loglint:method Complex64
 func (fields *Fields) Complex64(key string, value complex64) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -179,7 +166,6 @@ func (fields *Fields) Complex64(key string, value complex64) *Fields {
 	return fields
 }
 
-//loglint:method Complex128
 func (fields *Fields) Complex128(key string, value complex128) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -188,7 +174,6 @@ func (fields *Fields) Complex128(key string, value complex128) *Fields {
 	return fields
 }
 
-//loglint:method Byte
 func (fields *Fields) Byte(key string, value byte) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -197,7 +182,6 @@ func (fields *Fields) Byte(key string, value byte) *Fields {
 	return fields
 }
 
-//loglint:method Rune
 func (fields *Fields) Rune(key string, value rune) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -206,7 +190,6 @@ func (fields *Fields) Rune(key string, value rune) *Fields {
 	return fields
 }
 
-//loglint:method Bool
 func (fields *Fields) Bool(key string, value bool) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -215,7 +198,6 @@ func (fields *Fields) Bool(key string, value bool) *Fields {
 	return fields
 }
 
-//loglint:method String
 func (fields *Fields) String(key string, value string) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -224,7 +206,6 @@ func (fields *Fields) String(key string, value string) *Fields {
 	return fields
 }
 
-//loglint:method Error
 func (fields *Fields) Error(key string, value error) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -237,7 +218,6 @@ func (fields *Fields) Error(key string, value error) *Fields {
 	return fields
 }
 
-//loglint:method Any
 func (fields *Fields) Any(key string, value interface{}) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -263,7 +243,6 @@ func (fields *Fields) Any(key string, value interface{}) *Fields {
 	return fields
 }
 
-//loglint:method Type
 func (fields *Fields) Type(key string, value interface{}) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -276,7 +255,6 @@ func (fields *Fields) Type(key string, value interface{}) *Fields {
 	return fields
 }
 
-//loglint:method Exec
 func (fields *Fields) Exec(key string, stringer func() string) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
@@ -295,32 +273,26 @@ func (fields *Fields) writeTime(key string, value time.Time, layout string) *Fie
 	return fields
 }
 
-//loglint:method Date
 func (fields *Fields) Date(key string, value time.Time) *Fields {
 	return fields.writeTime(key, value, "2006-01-02Z07:00")
 }
 
-//loglint:method Time
 func (fields *Fields) Time(key string, value time.Time) *Fields {
 	return fields.writeTime(key, value, time.RFC3339Nano)
 }
 
-//loglint:method Seconds
 func (fields *Fields) Seconds(key string, value time.Time) *Fields {
 	return fields.writeTime(key, value, time.RFC3339)
 }
 
-//loglint:method Milliseconds
 func (fields *Fields) Milliseconds(key string, value time.Time) *Fields {
 	return fields.writeTime(key, value, "2006-01-02T15:04:05.999Z07:00")
 }
 
-//loglint:method Microseconds
 func (fields *Fields) Microseconds(key string, value time.Time) *Fields {
 	return fields.writeTime(key, value, "2006-01-02T15:04:05.999999Z07:00")
 }
 
-//loglint:method Duration
 func (fields *Fields) Duration(key string, value time.Duration) *Fields {
 	if fields != nil {
 		fields.encoder.encodeKey(key)
