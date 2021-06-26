@@ -1,4 +1,4 @@
-package main
+package analyzer
 
 import (
 	"go/ast"
@@ -11,20 +11,9 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// unparen returns e with any enclosing parentheses stripped.
-func unparen(e ast.Expr) ast.Expr {
-	for {
-		p, ok := e.(*ast.ParenExpr)
-		if !ok {
-			return e
-		}
-		e = p.X
-	}
-}
-
 const Doc = `check for github.com/gopherd/log unfinished chain calls.`
 
-var analyzer = &analysis.Analyzer{
+var Analyzer = &analysis.Analyzer{
 	Name:     "loglint",
 	Doc:      Doc,
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
@@ -51,13 +40,10 @@ func init() {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		ptr := "*"
-		typ := "Fields"
-		if j := strings.Index(m, "."); j > 0 {
-			typ = m[:j]
-			m = m[j+1:]
-			ptr = ""
-		}
+		j := strings.Index(m, ".")
+		ptr := ""
+		typ := m[:j]
+		m = m[j+1:]
 		if strings.HasPrefix(typ, "*") {
 			typ = typ[1:]
 			ptr = "*"
@@ -137,4 +123,15 @@ func (ss *stringSetFlag) Set(s string) error {
 	}
 	*ss = m
 	return nil
+}
+
+// unparen returns e with any enclosing parentheses stripped.
+func unparen(e ast.Expr) ast.Expr {
+	for {
+		p, ok := e.(*ast.ParenExpr)
+		if !ok {
+			return e
+		}
+		e = p.X
+	}
 }

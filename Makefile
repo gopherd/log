@@ -4,7 +4,7 @@ genslice:
 	go run genslice.go > slice.go
 
 genlintfuncs:
-	./genlintfuncs.sh > cmd/loglint/funcs.go
+	./genlintfuncs.sh > analyzer/funcs.go
 
 loglint:
 	cd cmd/loglint && go install

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"github.com/gopherd/log/analyzer"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
 func main() {
-	singlechecker.Main(analyzer)
+	singlechecker.Main(analyzer.Analyzer)
 }
