@@ -1,4 +1,4 @@
-all: genslice genlintfuncs loglint
+all: genslice genlintfuncs loglint benchmark
 
 genslice:
 	go run genslice.go > slice.go

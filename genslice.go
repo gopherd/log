@@ -56,7 +56,6 @@ func main() {
 	p("package log")
 	for _, t := range types {
 		p()
-		p("//loglint:method ", t.sliceName())
 		p("func (fields *Fields) ", t.sliceName(), "(key string, value []", t.name, ") *Fields {")
 		p("	if fields != nil {")
 		p("		fields.encoder.encodeKey(key)")
