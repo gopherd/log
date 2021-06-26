@@ -3,14 +3,14 @@
 genfuncs() {
 	echo
 	echo "var allFuncs = []string{"
-	grep -h " \*Fields {" *.go | grep '^func [A-Z]' | sed "s/(/\ /g" | awk '{printf ("\t\"%s\",\n",$2)}'
+	grep -h " \*Fields {" *.go | grep '^func [A-Z]' | sed "s/(/\ /g" | awk '{printf ("\t\"%s\",\n",$2)}' | sort
 	echo "}"
 }
 
 genmethods() {
 	echo
 	echo "var allMethods = []string{"
-	grep -h " \*Fields {" *.go | grep '^func (.*) [A-Z]' | sed "s/func\ (//g" | sed "s/(/\ /g" | sed "s/)//g" | awk '{printf ("\t\"%s.%s\",\n",$2,$3)}'
+	grep -h " \*Fields {" *.go | grep '^func (.*) [A-Z]' | sed "s/func\ (//g" | sed "s/(/\ /g" | sed "s/)//g" | awk '{printf ("\t\"%s.%s\",\n",$2,$3)}' | sort
 	echo "}"
 }
 
