@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -50,7 +51,14 @@ func (fields *Fields) Print(s string) {
 	}
 	fields.encoder.finish()
 	fields.encoder.writeString(s)
-	gprinter.Printf(1, fields.level, fields.prefix, fields.encoder.String())
+	var (
+		file string
+		line int
+	)
+	if gprinter.GetFlags()&(Lshortfile|Llongfile) != 0 {
+		_, file, line, _ = runtime.Caller(1)
+	}
+	gprinter.Printf(file, line, fields.level, fields.prefix, fields.encoder.String())
 	putFields(fields)
 }
 

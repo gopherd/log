@@ -1,11 +1,9 @@
 package log
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	std "log"
 	"net/http"
 	"os"
 	"runtime"
@@ -20,8 +18,8 @@ import (
 // Bits are or'ed together to control what's printed.
 const (
 	Ldatetime     = 1 << iota // the datetime in the local time zone: 2001/02/03 01:23:23
-	Llongfile                 // full file name and line number: /a/b/c/d.go:23
 	Lshortfile                // final file name element and line number: d.go:23. overrides Llongfile
+	Llongfile                 // full file name and line number: /a/b/c/d.go:23
 	LUTC                      // if Ldatetime is set, use UTC rather than the local time zone
 	LdefaultFlags = Ldatetime // default values for the standard logger
 )
@@ -201,7 +199,7 @@ type Printer interface {
 	// SetPrefix sets log prefix
 	SetPrefix(string)
 	// Printf outputs leveled logs with specified calldepth and extra prefix
-	Printf(calldepth int, level Level, prefix, format string, args ...interface{})
+	Printf(file string, line int, level Level, prefix, format string, args ...interface{})
 }
 
 // stack returns the call stack
@@ -371,8 +369,9 @@ func (p *printer) SetPrefix(prefix string) {
 }
 
 // Printf implements Printer Printf method
-func (p *printer) Printf(calldepth int, level Level, prefix, format string, args ...interface{}) {
-	p.output(level, calldepth, prefix, format, args...)
+func (p *printer) Printf(file string, line int, level Level, prefix, format string, args ...interface{}) {
+	flags := p.GetFlags()
+	p.output(flags, level, file, line, prefix, format, args...)
 	if level == LvFATAL {
 		p.Shutdown()
 		os.Exit(1)
@@ -462,31 +461,19 @@ func (p *printer) formatHeader(level Level, file string, line, flags int) *entry
 	return e
 }
 
-func (p *printer) header(level Level, calldepth, flags int) *entry {
-	var (
-		file string
-		line int
-		ok   bool
-	)
+func (p *printer) output(flags int, level Level, file string, line int, prefix, format string, args ...interface{}) {
 	if flags&(Lshortfile|Llongfile) != 0 {
-		_, file, line, ok = runtime.Caller(calldepth)
-		if !ok {
-			ok = true
+		if line == 0 {
 			file = "???"
 			line = 0
-		} else if flags&Llongfile == 0 {
+		} else if flags&Lshortfile != 0 {
 			slash := strings.LastIndex(file, "/")
 			if slash >= 0 {
 				file = file[slash+1:]
 			}
 		}
 	}
-	return p.formatHeader(level, file, line, flags)
-}
-
-func (p *printer) output(level Level, calldepth int, prefix, format string, args ...interface{}) {
-	flags := p.GetFlags()
-	e := p.header(level, calldepth+3, flags)
+	e := p.formatHeader(level, file, line, flags)
 	e.header = e.Len()
 	if len(p.prefix) > 0 {
 		e.WriteByte('(')
@@ -532,106 +519,21 @@ func (p *printer) output(level Level, calldepth int, prefix, format string, args
 	}
 }
 
-// stdPrinter wraps golang standard log package
-type stdPrinter struct {
-	level Level
-}
+// emptyPrinter wraps golang standard log package
+type emptyPrinter struct{}
 
-// newStdPrinter creates std logger
-func newStdPrinter() Printer {
-	return &stdPrinter{level: LvINFO}
-}
-
-// Start implements Printer Start method
-func (stdPrinter) Start() {}
-
-// Shutdown implements Printer Shutdown method
-func (stdPrinter) Shutdown() {}
-
-// Flush implements Printer Flush method
-func (stdPrinter) Flush() {}
-
-// SetPrefix implements Printer SetPrefix method
-func (stdPrinter) SetPrefix(prefix string) { std.SetPrefix(prefix) }
-
-// SetFlags implements Printer SetFlags method
-func (stdPrinter) GetFlags() int {
-	var (
-		stdFlags = std.Flags()
-		flags    int
-	)
-	if stdFlags&std.Ldate&std.Ltime != 0 {
-		flags |= Ldatetime
-	}
-	if stdFlags&std.Lshortfile != 0 {
-		flags |= Lshortfile
-	}
-	if stdFlags&std.Llongfile != 0 {
-		flags |= Llongfile
-	}
-	if stdFlags&std.LUTC != 0 {
-		flags |= LUTC
-	}
-	return flags
-}
-
-// SetFlags implements Printer SetFlags method
-func (stdPrinter) SetFlags(flags int) {
-	var stdFlags int
-	if flags&Ldatetime != 0 {
-		stdFlags |= std.Ldate | std.Ltime
-	}
-	if flags&Lshortfile != 0 {
-		stdFlags |= std.Lshortfile
-	}
-	if flags&Llongfile != 0 {
-		stdFlags |= std.Llongfile
-	}
-	if flags&LUTC != 0 {
-		stdFlags |= std.LUTC
-	}
-	std.SetFlags(stdFlags | std.Lmsgprefix)
-}
-
-// GetLevel implements Printer GetLevel method
-func (p *stdPrinter) GetLevel() Level { return Level(atomic.LoadInt32((*int32)(&p.level))) }
-
-// SetLevel implements Printer SetLevel method
-func (p *stdPrinter) SetLevel(level Level) { atomic.StoreInt32((*int32)(&p.level), int32(level)) }
-
-// Printf implements Printer Printf method
-func (p *stdPrinter) Printf(calldepth int, level Level, prefix, format string, args ...interface{}) {
-	p.output(calldepth, level, prefix+format, args...)
-}
-
-func (p *stdPrinter) output(calldepth int, level Level, format string, args ...interface{}) {
-	if level != LvFATAL {
-		if len(args) == 0 {
-			std.Output(calldepth+3, format)
-		} else {
-			std.Output(calldepth+3, fmt.Sprintf(format, args...))
-		}
-	} else {
-		buf := new(bytes.Buffer)
-		if len(args) == 0 {
-			buf.WriteString(format)
-		} else {
-			fmt.Fprintf(buf, format, args...)
-		}
-		if buf.Len() == 0 || buf.Bytes()[buf.Len()-1] != '\n' {
-			buf.WriteByte('\n')
-		}
-		stackBuf := stack(4)
-		buf.WriteString("========= BEGIN STACK TRACE =========\n")
-		buf.Write(stackBuf)
-		buf.WriteString("========== END STACK TRACE ==========\n")
-		std.Output(calldepth+3, buf.String())
-		os.Exit(1)
-	}
-}
+func (emptyPrinter) Start()                                                         {}
+func (emptyPrinter) Shutdown()                                                      {}
+func (emptyPrinter) Flush()                                                         {}
+func (emptyPrinter) SetPrefix(prefix string)                                        {}
+func (emptyPrinter) GetFlags() int                                                  { return 0 }
+func (emptyPrinter) SetFlags(flags int)                                             {}
+func (emptyPrinter) GetLevel() Level                                                { return LvINFO }
+func (emptyPrinter) SetLevel(level Level)                                           {}
+func (emptyPrinter) Printf(_ string, _ int, _ Level, _, _ string, _ ...interface{}) {}
 
 // global printer
-var gprinter = newStdPrinter()
+var gprinter Printer = emptyPrinter{}
 
 type startOptions struct {
 	httpHandler bool
@@ -828,7 +730,14 @@ func Log(calldepth int, level Level, prefix, format string, args ...interface{})
 	if gprinter.GetLevel() < level {
 		return
 	}
-	gprinter.Printf(calldepth, level, prefix, format, args...)
+	var (
+		file string
+		line int
+	)
+	if gprinter.GetFlags()&(Lshortfile|Llongfile) != 0 {
+		_, file, line, _ = runtime.Caller(1)
+	}
+	gprinter.Printf(file, line, level, prefix, format, args...)
 }
 
 // Trace creates a context fields with level trace
@@ -860,7 +769,14 @@ func Printf(level Level, format string, args ...interface{}) {
 	if gprinter.GetLevel() < level {
 		return
 	}
-	gprinter.Printf(1, level, "", format, args...)
+	var (
+		file string
+		line int
+	)
+	if gprinter.GetFlags()&(Lshortfile|Llongfile) != 0 {
+		_, file, line, _ = runtime.Caller(1)
+	}
+	gprinter.Printf(file, line, level, "", format, args...)
 }
 
 // Prefix wraps a string as a prefixed logger
@@ -895,7 +811,14 @@ func (p Prefix) Printf(level Level, format string, args ...interface{}) {
 	if gprinter.GetLevel() < level {
 		return
 	}
-	gprinter.Printf(1, level, string(p), format, args...)
+	var (
+		file string
+		line int
+	)
+	if gprinter.GetFlags()&(Lshortfile|Llongfile) != 0 {
+		_, file, line, _ = runtime.Caller(1)
+	}
+	gprinter.Printf(file, line, level, string(p), format, args...)
 }
 
 // Prefix appends a prefix to current prefix
