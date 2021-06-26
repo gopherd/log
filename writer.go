@@ -521,7 +521,7 @@ func newMultiFile(options MultiFileOptions) *multiFile {
 	w := new(multiFile)
 	w.options = options
 	w.group = map[string][]Level{}
-	for level := LvFATAL; level <= LvTRACE; level++ {
+	for level := LevelFatal; level <= LevelTrace; level++ {
 		dir := w.levelDir(level)
 		if levels, ok := w.group[dir]; ok {
 			w.group[dir] = append(levels, level)
@@ -598,15 +598,15 @@ func (w *multiFile) optionsOfLevel(level Level) FileOptions {
 
 func (w *multiFile) levelDir(level Level) string {
 	switch level {
-	case LvFATAL:
+	case LevelFatal:
 		return w.options.FatalDir
-	case LvERROR:
+	case LevelError:
 		return w.options.ErrorDir
-	case LvWARN:
+	case LevelWarn:
 		return w.options.WarnDir
-	case LvINFO:
+	case LevelInfo:
 		return w.options.InfoDir
-	case LvDEBUG:
+	case LevelDebug:
 		return w.options.DebugDir
 	default:
 		return w.options.TraceDir

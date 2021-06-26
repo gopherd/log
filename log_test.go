@@ -31,8 +31,8 @@ func (w *testingLogWriter) Close() error { return nil }
 
 func TestWriter(t *testing.T) {
 	writer := new(testingLogWriter)
-	log.Start(log.WithWriters(writer), log.WithLevel(log.LvTRACE), log.WithPrefix("testing"))
-	log.Printf(log.LvTRACE, "hello %s", "log")
+	log.Start(log.WithWriters(writer), log.WithLevel(log.LevelTrace), log.WithPrefix("testing"))
+	log.Printf(log.LevelTrace, "hello %s", "log")
 	logger := log.Prefix("prefix")
 	logger.Debug().Print("hello world")
 	log.Shutdown()
@@ -45,7 +45,7 @@ func TestWriter(t *testing.T) {
 
 func ExampleFields() {
 	writer := new(testingLogWriter)
-	log.Start(log.WithWriters(writer), log.WithLevel(log.LvINFO), log.WithPrefix("testing"))
+	log.Start(log.WithWriters(writer), log.WithLevel(log.LevelInfo), log.WithPrefix("testing"))
 	log.Info().Int("int", 123456).Print("fields")
 	log.Info().Int8("int8", -12).Print("fields")
 	log.Info().Int16("int16", 1234).Print("fields")
@@ -151,9 +151,9 @@ func benchmarkSetup(b *testing.B, caller, off bool) {
 		log.WithSync(true),
 	)
 	if off {
-		options = append(options, log.WithLevel(log.LvINFO))
+		options = append(options, log.WithLevel(log.LevelInfo))
 	} else {
-		options = append(options, log.WithLevel(log.LvDEBUG))
+		options = append(options, log.WithLevel(log.LevelDebug))
 	}
 	if caller {
 		options = append(options, log.WithFlags(log.Lshortfile|log.Ldatetime|log.LUTC))

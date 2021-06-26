@@ -29,13 +29,13 @@ type Level int32
 
 // Level constants
 const (
-	_       Level = iota // 0
-	LvFATAL              // 1
-	LvERROR              // 2
-	LvWARN               // 3
-	LvINFO               // 4
-	LvDEBUG              // 5
-	LvTRACE              // 6
+	_          Level = iota // 0
+	LevelFatal              // 1
+	LevelError              // 2
+	LevelWarn               // 3
+	LevelInfo               // 4
+	LevelDebug              // 5
+	LevelTrace              // 6
 
 	numLevel = 6
 )
@@ -43,7 +43,7 @@ const (
 const levelBytes = "FEWIDT"
 
 func getLevelByte(level Level) byte {
-	i := int(level - LvFATAL)
+	i := int(level - LevelFatal)
 	if i < 0 || i >= len(levelBytes) {
 		return 'X'
 	}
@@ -75,17 +75,17 @@ func (level Level) Literal() string {
 // String returns a serialized string of level
 func (level Level) String() string {
 	switch level {
-	case LvFATAL:
+	case LevelFatal:
 		return "FATAL"
-	case LvERROR:
+	case LevelError:
 		return "ERROR"
-	case LvWARN:
+	case LevelWarn:
 		return "WARN"
-	case LvINFO:
+	case LevelInfo:
 		return "INFO"
-	case LvDEBUG:
+	case LevelDebug:
 		return "DEBUG"
-	case LvTRACE:
+	case LevelTrace:
 		return "TRACE"
 	}
 	return "(" + strconv.Itoa(int(level)) + ")"
@@ -120,20 +120,20 @@ func (level Level) MoreVerboseThan(other Level) bool { return level > other }
 func ParseLevel(s string) (lv Level, ok bool) {
 	s = strings.ToUpper(s)
 	switch s {
-	case "FATAL", "F", LvFATAL.Literal():
-		return LvFATAL, true
-	case "ERROR", "E", LvERROR.Literal():
-		return LvERROR, true
-	case "WARN", "W", LvWARN.Literal():
-		return LvWARN, true
-	case "INFO", "I", LvINFO.Literal():
-		return LvINFO, true
-	case "DEBUG", "D", LvDEBUG.Literal():
-		return LvDEBUG, true
-	case "TRACE", "T", LvTRACE.Literal():
-		return LvTRACE, true
+	case "FATAL", "F", LevelFatal.Literal():
+		return LevelFatal, true
+	case "ERROR", "E", LevelError.Literal():
+		return LevelError, true
+	case "WARN", "W", LevelWarn.Literal():
+		return LevelWarn, true
+	case "INFO", "I", LevelInfo.Literal():
+		return LevelInfo, true
+	case "DEBUG", "D", LevelDebug.Literal():
+		return LevelDebug, true
+	case "TRACE", "T", LevelTrace.Literal():
+		return LevelTrace, true
 	}
-	return LvINFO, false
+	return LevelInfo, false
 }
 
 // httpHandlerGetLevel returns a http handler for getting log level.
@@ -373,7 +373,7 @@ func (p *printer) SetPrefix(prefix string) {
 func (p *printer) Printf(file string, line int, level Level, prefix, format string, args ...interface{}) {
 	flags := p.GetFlags()
 	p.output(flags, level, file, line, prefix, format, args...)
-	if level == LvFATAL {
+	if level == LevelFatal {
 		p.Shutdown()
 		os.Exit(1)
 	}
@@ -500,7 +500,7 @@ func (p *printer) output(flags int, level Level, file string, line int, prefix, 
 	if e.Bytes()[e.Len()-1] != '\n' {
 		e.WriteByte('\n')
 	}
-	if level == LvFATAL {
+	if level == LevelFatal {
 		stackBuf := stack(4)
 		e.WriteString("========= BEGIN STACK TRACE =========\n")
 		e.Write(stackBuf)
@@ -529,7 +529,7 @@ func (emptyPrinter) Flush()                                                     
 func (emptyPrinter) SetPrefix(prefix string)                                        {}
 func (emptyPrinter) GetFlags() int                                                  { return 0 }
 func (emptyPrinter) SetFlags(flags int)                                             {}
-func (emptyPrinter) GetLevel() Level                                                { return LvINFO }
+func (emptyPrinter) GetLevel() Level                                                { return LevelInfo }
 func (emptyPrinter) SetLevel(level Level)                                           {}
 func (emptyPrinter) Printf(_ string, _ int, _ Level, _, _ string, _ ...interface{}) {}
 
@@ -550,7 +550,7 @@ type startOptions struct {
 func defaultStartOptions() startOptions {
 	return startOptions{
 		flags: LdefaultFlags,
-		level: LvINFO,
+		level: LevelInfo,
 	}
 }
 
@@ -727,22 +727,22 @@ func SetLevel(level Level) {
 }
 
 // Trace creates a context fields with level trace
-func Trace() *Fields { return getFields(LvTRACE, "") }
+func Trace() *Fields { return getFields(LevelTrace, "") }
 
 // Debug creates a context fields with level debug
-func Debug() *Fields { return getFields(LvDEBUG, "") }
+func Debug() *Fields { return getFields(LevelDebug, "") }
 
 // Info creates a context fields with level info
-func Info() *Fields { return getFields(LvINFO, "") }
+func Info() *Fields { return getFields(LevelInfo, "") }
 
 // Warn creates a context fields with level warn
-func Warn() *Fields { return getFields(LvWARN, "") }
+func Warn() *Fields { return getFields(LevelWarn, "") }
 
 // Error creates a context fields with level error
-func Error() *Fields { return getFields(LvERROR, "") }
+func Error() *Fields { return getFields(LevelError, "") }
 
 // Fatal creates a context fields with level fatal
-func Fatal() *Fields { return getFields(LvFATAL, "") }
+func Fatal() *Fields { return getFields(LevelFatal, "") }
 
 // Printf wraps the global printer Printf method
 func Printf(level Level, format string, args ...interface{}) {
@@ -778,22 +778,22 @@ func Log(calldepth int, level Level, prefix, format string, args ...interface{})
 type Prefix string
 
 // Trace creates a context fields with level trace
-func (p Prefix) Trace() *Fields { return getFields(LvTRACE, p) }
+func (p Prefix) Trace() *Fields { return getFields(LevelTrace, p) }
 
 // Debug creates a context fields with level debug
-func (p Prefix) Debug() *Fields { return getFields(LvDEBUG, p) }
+func (p Prefix) Debug() *Fields { return getFields(LevelDebug, p) }
 
 // Info creates a context fields with level info
-func (p Prefix) Info() *Fields { return getFields(LvINFO, p) }
+func (p Prefix) Info() *Fields { return getFields(LevelInfo, p) }
 
 // Warn creates a context fields with level warn
-func (p Prefix) Warn() *Fields { return getFields(LvWARN, p) }
+func (p Prefix) Warn() *Fields { return getFields(LevelWarn, p) }
 
 // Error creates a context fields with level error
-func (p Prefix) Error() *Fields { return getFields(LvERROR, p) }
+func (p Prefix) Error() *Fields { return getFields(LevelError, p) }
 
 // Fatal creates a context fields with level fatal
-func (p Prefix) Fatal() *Fields { return getFields(LvFATAL, p) }
+func (p Prefix) Fatal() *Fields { return getFields(LevelFatal, p) }
 
 // Printf wraps the global printer Printf method
 func (p Prefix) Printf(level Level, format string, args ...interface{}) {
