@@ -11,7 +11,8 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-const Doc = `check for github.com/gopherd/log unfinished chain calls.`
+const pkg = "github.com/gopherd/log"
+const Doc = "check for " + pkg + " unfinished chain calls."
 
 var Analyzer = &analysis.Analyzer{
 	Name:     "loglint",
@@ -30,8 +31,7 @@ func init() {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		sb.WriteString("github.com/gopherd/log.")
-		sb.WriteString(f)
+		sb.WriteString(pkg + "." + f)
 	}
 	funcs.Set(sb.String())
 
@@ -48,8 +48,7 @@ func init() {
 			typ = typ[1:]
 			ptr = "*"
 		}
-		sb.WriteString("(" + ptr + "github.com/gopherd/log." + typ + ").")
-		sb.WriteString(m)
+		sb.WriteString("(" + ptr + pkg + "." + typ + ")." + m)
 	}
 	methods.Set(sb.String())
 }
