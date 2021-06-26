@@ -16,6 +16,37 @@ import (
 	"time"
 )
 
+const (
+	KB = 1024
+	MB = 1024 * KB
+	GB = 1024 * MB
+)
+
+func parseSize(s string) (int64, error) {
+	n := len(s)
+	if n == 0 {
+		return 0, errors.New("invalid size")
+	}
+	u := s[n-1]
+	x := int64(1)
+	switch u {
+	case 'k', 'K':
+		x = KB
+	case 'm', 'M':
+		x = MB
+	case 'g', 'G':
+		x = GB
+	}
+	if x > 1 {
+		s = s[:n-1]
+	}
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid size")
+	}
+	return i * x, nil
+}
+
 var (
 	errNilWriter = errors.New("log: nil writer")
 )
@@ -212,64 +243,65 @@ var fileHeaders = map[FileHeader]string{
 }
 
 // FileOptions represents options of file writer
+//
+// fullname of log file: $Filename.$date[.$rotateId]$Suffix
 type FileOptions struct {
-	Dir          string     `json:"dir"`          // log directory (default: .)
-	Filename     string     `json:"filename"`     // log filename (default: <appName>.log)
-	SymlinkedDir string     `json:"symlinkeddir"` // symlinked directory is symlink enabled (default: symlinked)
-	NoSymlink    bool       `json:"nosymlink"`    // doesn't create symlink to latest log file (default: false)
-	MaxSize      int        `json:"maxsize"`      // max bytes number of every log file(default: 64M)
-	Rotate       bool       `json:"rotate"`       // enable log rotate (default: no)
-	Suffix       string     `json:"suffix"`       // filename suffixa(default: .log)
-	DateFormat   string     `json:"dateformat"`   // date format string for filename (default: %04d%02d%02d)
-	Header       FileHeader `json:"header"`       // header type of file (default: NoHeader)
+	Dir      string     `json:"dir"`      // log directory (default: .)
+	Filename string     `json:"filename"` // log filename (default: <process name>)
+	Symdir   string     `json:"symdir"`   // symlinked directory if symlink enabled (default: "")
+	Symlink  bool       `json:"symlink"`  // create symlink to latest log file (default: false)
+	Rotate   bool       `json:"rotate"`   // enable log rotate (default: false)
+	MaxSize  int64      `json:"maxsize"`  // max number bytes of log file (default: 64M)
+	Suffix   string     `json:"suffix"`   // filename suffix (default: .log)
+	Header   FileHeader `json:"header"`   // header type of file (default: NoHeader)
 
 	FS FS `json:"-"` // custom filesystem (default: stdFS)
 }
 
-func (opts *FileOptions) setDefaults() {
-	if opts.Dir == "" {
-		opts.Dir = "."
+func (opt *FileOptions) setDefaults() {
+	if opt.Dir == "" {
+		opt.Dir = "."
 	}
-	if opts.MaxSize == 0 {
-		opts.MaxSize = 1 << 26 // 64M
+	if opt.MaxSize == 0 {
+		opt.MaxSize = 64 * MB
 	}
-	if opts.DateFormat == "" {
-		opts.DateFormat = "%04d%02d%02d"
+	if opt.Suffix == "" {
+		opt.Suffix = ".log"
+	} else if opt.Suffix[0] != '.' {
+		opt.Suffix = "." + opt.Suffix
 	}
-	if opts.Suffix == "" {
-		opts.Suffix = ".log"
+	if opt.Filename == "" {
+		name := filepath.Base(os.Args[0])
+		if strings.HasSuffix(name, ".exe") {
+			name = strings.TrimSuffix(name, ".exe")
+		}
+		opt.Filename = name
 	}
-	if opts.SymlinkedDir == "" {
-		opts.SymlinkedDir = "symlinked"
-	} else if opts.SymlinkedDir == "-" {
-		opts.SymlinkedDir = ""
-	}
-	if opts.FS == nil {
-		opts.FS = defaultFS
+	if opt.FS == nil {
+		opt.FS = defaultFS
 	}
 }
 
 // file is a writer which writes logs to file
 type file struct {
 	options          FileOptions
-	currentSize      int
-	createdTime      time.Time
-	fileIndex        int
+	written          int64
+	createdAt        time.Time
+	rotateId         int
 	onceCreateLogDir sync.Once
 
-	mu      sync.Mutex
-	writer  *bufio.Writer
-	file    File
-	written bool
-	quit    chan struct{}
+	mu     sync.Mutex
+	writer *bufio.Writer
+	file   File
+	quit   chan struct{}
 }
 
 func newFile(options FileOptions) (*file, error) {
 	options.setDefaults()
 	w := &file{
-		options:   options,
-		fileIndex: -1,
-		quit:      make(chan struct{}),
+		options:  options,
+		rotateId: -1,
+		quit:     make(chan struct{}),
 	}
 	if err := w.rotate(time.Now()); err != nil {
 		return nil, err
@@ -281,10 +313,10 @@ func newFile(options FileOptions) (*file, error) {
 			select {
 			case <-ticker.C:
 				f.mu.Lock()
-				if f.written {
+				if f.written > 0 {
 					f.writer.Flush()
 					f.file.Sync()
-					f.written = false
+					f.written = 0
 				}
 				f.mu.Unlock()
 			case <-f.quit:
@@ -297,26 +329,24 @@ func newFile(options FileOptions) (*file, error) {
 
 func parseFileSource(opt *FileOptions, source string) (url.Values, error) {
 	i := strings.Index(source, "?")
-	if i <= 0 {
-		return nil, errors.New("log: invalid source for file: " + source)
-	}
-	opt.Dir, opt.Filename = filepath.Split(source[:i])
-	if opt.Filename == "" {
-		return nil, errors.New("log: invalid source for file: " + source)
+	if i > 0 {
+		opt.Dir, opt.Filename = filepath.Split(source[:i])
+	} else {
+		opt.Dir, opt.Filename = filepath.Split(source)
 	}
 	opt.Dir = filepath.Clean(opt.Dir)
 	q, err := url.ParseQuery(source[i+1:])
 	if err != nil {
 		return nil, errors.New("log: invalid source for file: " + source)
 	}
-	opt.SymlinkedDir = q.Get("symlinkeddir")
-	opt.NoSymlink, _ = strconv.ParseBool(q.Get("nosymlink"))
-	opt.MaxSize, _ = strconv.Atoi(q.Get("maxsize"))
+	opt.Symdir = q.Get("symdir")
+	opt.Symlink, _ = strconv.ParseBool(q.Get("symlink"))
+	opt.MaxSize, _ = parseSize(q.Get("maxsize"))
 	opt.Rotate, _ = strconv.ParseBool(q.Get("rotate"))
 	opt.Suffix = q.Get("suffix")
-	opt.DateFormat = q.Get("dateformat")
 	header, _ := strconv.Atoi(q.Get("header"))
 	opt.Header = FileHeader(header)
+	opt.setDefaults()
 	return q, nil
 }
 
@@ -339,21 +369,20 @@ func (w *file) Write(level Level, data []byte, _ int) error {
 		return errNilWriter
 	}
 	now := time.Now()
-	if !isSameDay(now, w.createdTime) {
+	if !isSameDay(now, w.createdAt) {
 		if err := w.rotate(now); err != nil {
 			return err
 		}
 	}
 	n, err := w.writer.Write(data)
-	w.written = true
-	w.currentSize += n
-	if w.currentSize >= w.options.MaxSize {
+	w.written += int64(n)
+	if w.written >= w.options.MaxSize {
 		w.rotate(now)
 	}
 	return err
 }
 
-func (w *file) closeCurrent() error {
+func (w *file) clear() error {
 	if w.writer != nil {
 		if err := w.writer.Flush(); err != nil {
 			return err
@@ -364,9 +393,8 @@ func (w *file) closeCurrent() error {
 		if err := w.file.Close(); err != nil {
 			return err
 		}
-		w.written = false
 	}
-	w.currentSize = 0
+	w.written = 0
 	return nil
 }
 
@@ -375,17 +403,17 @@ func (w *file) Close() error {
 	close(w.quit)
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	return w.closeCurrent()
+	return w.clear()
 }
 
 func (w *file) rotate(now time.Time) error {
-	w.closeCurrent()
-	if isSameDay(now, w.createdTime) {
-		w.fileIndex = (w.fileIndex + 1) % 1000
+	w.clear()
+	if isSameDay(now, w.createdAt) {
+		w.rotateId = (w.rotateId + 1) % 1000
 	} else {
-		w.fileIndex = 0
+		w.rotateId = 0
 	}
-	w.createdTime = now
+	w.createdAt = now
 
 	var err error
 	w.file, err = w.create()
@@ -401,7 +429,7 @@ func (w *file) rotate(now time.Time) error {
 		fmt.Fprintln(&buf, header)
 	}
 	n, err := w.file.Write(buf.Bytes())
-	w.currentSize += n
+	w.written += int64(n)
 	w.writer.Flush()
 	w.file.Sync()
 	return err
@@ -412,26 +440,14 @@ func (w *file) create() (File, error) {
 
 	// make filename
 	var (
-		y, m, d = w.createdTime.Date()
-		name    string
-		prefix  = w.options.Filename
-		date    = fmt.Sprintf(w.options.DateFormat, y, m, d)
+		prefix = w.options.Filename
+		date   = w.createdAt.Format("20060102")
+		name   = fmt.Sprintf("%s.%s", prefix, date)
 	)
-	if w.options.Filename != "" {
-		prefix += "."
+	if w.rotateId > 0 {
+		name = fmt.Sprintf("%s.%03d", name, w.rotateId)
 	}
-	if w.options.Rotate {
-		name = fmt.Sprintf("%s%s", prefix, date)
-	} else {
-		H, M, _ := w.createdTime.Clock()
-		name = fmt.Sprintf("%s%s-%02d%02d.%06d", prefix, date, H, M, os.Getpid())
-	}
-	if w.fileIndex > 0 {
-		name = fmt.Sprintf("%s.%03d", name, w.fileIndex)
-	}
-	if !strings.HasSuffix(name, w.options.Suffix) {
-		name += w.options.Suffix
-	}
+	name += w.options.Suffix
 
 	// create file
 	var (
@@ -439,31 +455,28 @@ func (w *file) create() (File, error) {
 		f        File
 		err      error
 	)
-	if !w.options.NoSymlink {
-		fullname = filepath.Join(w.options.Dir, w.options.SymlinkedDir, name)
+	if w.options.Symlink {
+		fullname = filepath.Join(w.options.Dir, w.options.Symdir, name)
 	}
-	err = os.MkdirAll(filepath.Dir(fullname), 0755)
-	if err == nil {
-		if w.options.Rotate {
-			f, err = w.options.FS.OpenFile(fullname, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		} else {
-			f, err = w.options.FS.OpenFile(fullname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-		}
+	if w.options.Rotate {
+		f, err = w.options.FS.OpenFile(fullname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	} else {
+		f, err = w.options.FS.OpenFile(fullname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	}
-	if err == nil && !w.options.NoSymlink {
-		tmp := w.options.Filename
-		if tmp == "" {
-			tmp = filepath.Base(os.Args[0])
-		}
-		symlink := filepath.Join(w.options.Dir, tmp+w.options.Suffix)
+	if err == nil && w.options.Symlink {
+		symlink := filepath.Join(w.options.Dir, w.options.Filename+w.options.Suffix)
 		w.options.FS.Remove(symlink)
-		w.options.FS.Symlink(filepath.Join(w.options.SymlinkedDir, name), symlink)
+		w.options.FS.Symlink(filepath.Join(w.options.Symdir, name), symlink)
 	}
 	return f, err
 }
 
 func (w *file) createDir() {
-	w.options.FS.MkdirAll(w.options.Dir, 0755)
+	dir := w.options.Dir
+	if w.options.Symdir != "" {
+		dir = filepath.Join(w.options.Dir, w.options.Symdir)
+	}
+	w.options.FS.MkdirAll(dir, 0755)
 }
 
 func isSameDay(t1, t2 time.Time) bool {
@@ -483,25 +496,25 @@ type MultiFileOptions struct {
 	TraceDir string `json:"tracedir"` // trace subdirectory (default: trace)
 }
 
-func (opts *MultiFileOptions) setDefaults() {
-	opts.FileOptions.setDefaults()
-	if opts.FatalDir == "" {
-		opts.FatalDir = "fatal"
+func (opt *MultiFileOptions) setDefaults() {
+	opt.FileOptions.setDefaults()
+	if opt.FatalDir == "" {
+		opt.FatalDir = "fatal"
 	}
-	if opts.ErrorDir == "" {
-		opts.ErrorDir = "error"
+	if opt.ErrorDir == "" {
+		opt.ErrorDir = "error"
 	}
-	if opts.WarnDir == "" {
-		opts.WarnDir = "warn"
+	if opt.WarnDir == "" {
+		opt.WarnDir = "warn"
 	}
-	if opts.InfoDir == "" {
-		opts.InfoDir = "info"
+	if opt.InfoDir == "" {
+		opt.InfoDir = "info"
 	}
-	if opts.DebugDir == "" {
-		opts.DebugDir = "debug"
+	if opt.DebugDir == "" {
+		opt.DebugDir = "debug"
 	}
-	if opts.TraceDir == "" {
-		opts.TraceDir = "trace"
+	if opt.TraceDir == "" {
+		opt.TraceDir = "trace"
 	}
 }
 
