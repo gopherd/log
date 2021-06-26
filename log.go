@@ -198,7 +198,8 @@ type Printer interface {
 	SetLevel(Level)
 	// SetPrefix sets log prefix
 	SetPrefix(string)
-	// Printf outputs leveled logs with specified calldepth and extra prefix
+	// Printf outputs leveled logs with file, line and extra prefix.
+	// If line <= 0, then file and line both are invalid.
 	Printf(file string, line int, level Level, prefix, format string, args ...interface{})
 }
 
@@ -463,7 +464,7 @@ func (p *printer) formatHeader(level Level, file string, line, flags int) *entry
 
 func (p *printer) output(flags int, level Level, file string, line int, prefix, format string, args ...interface{}) {
 	if flags&(Lshortfile|Llongfile) != 0 {
-		if line == 0 {
+		if line <= 0 {
 			file = "???"
 			line = 0
 		} else if flags&Lshortfile != 0 {
@@ -725,21 +726,6 @@ func SetLevel(level Level) {
 	gprinter.SetLevel(level)
 }
 
-// Log is a low-level API to print logging
-func Log(calldepth int, level Level, prefix, format string, args ...interface{}) {
-	if gprinter.GetLevel() < level {
-		return
-	}
-	var (
-		file string
-		line int
-	)
-	if gprinter.GetFlags()&(Lshortfile|Llongfile) != 0 {
-		_, file, line, _ = runtime.Caller(1)
-	}
-	gprinter.Printf(file, line, level, prefix, format, args...)
-}
-
 // Trace creates a context fields with level trace
 //loglint: Trace
 func Trace() *Fields { return getFields(LvTRACE, "") }
@@ -777,6 +763,21 @@ func Printf(level Level, format string, args ...interface{}) {
 		_, file, line, _ = runtime.Caller(1)
 	}
 	gprinter.Printf(file, line, level, "", format, args...)
+}
+
+// Log is a low-level API to print log.
+func Log(calldepth int, level Level, prefix, format string, args ...interface{}) {
+	if gprinter.GetLevel() < level {
+		return
+	}
+	var (
+		file string
+		line int
+	)
+	if gprinter.GetFlags()&(Lshortfile|Llongfile) != 0 {
+		_, file, line, _ = runtime.Caller(calldepth)
+	}
+	gprinter.Printf(file, line, level, prefix, format, args...)
 }
 
 // Prefix wraps a string as a prefixed logger
