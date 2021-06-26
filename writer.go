@@ -248,8 +248,7 @@ var fileHeaders = map[FileHeader]string{
 type FileOptions struct {
 	Dir      string     `json:"dir"`      // log directory (default: .)
 	Filename string     `json:"filename"` // log filename (default: <process name>)
-	Symdir   string     `json:"symdir"`   // symlinked directory if symlink enabled (default: "")
-	Symlink  bool       `json:"symlink"`  // create symlink to latest log file (default: false)
+	Symdir   string     `json:"symdir"`   // symlinked directory (default: "")
 	Rotate   bool       `json:"rotate"`   // enable log rotate (default: false)
 	MaxSize  int64      `json:"maxsize"`  // max number bytes of log file (default: 64M)
 	Suffix   string     `json:"suffix"`   // filename suffix (default: .log)
@@ -340,7 +339,6 @@ func parseFileSource(opt *FileOptions, source string) (url.Values, error) {
 		return nil, errors.New("log: invalid source for file: " + source)
 	}
 	opt.Symdir = q.Get("symdir")
-	opt.Symlink, _ = strconv.ParseBool(q.Get("symlink"))
 	opt.MaxSize, _ = parseSize(q.Get("maxsize"))
 	opt.Rotate, _ = strconv.ParseBool(q.Get("rotate"))
 	opt.Suffix = q.Get("suffix")
@@ -455,7 +453,7 @@ func (w *file) create() (File, error) {
 		f        File
 		err      error
 	)
-	if w.options.Symlink {
+	if w.options.Symdir != "" {
 		fullname = filepath.Join(w.options.Dir, w.options.Symdir, name)
 	}
 	if w.options.Rotate {
@@ -463,7 +461,7 @@ func (w *file) create() (File, error) {
 	} else {
 		f, err = w.options.FS.OpenFile(fullname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	}
-	if err == nil && w.options.Symlink {
+	if err == nil && w.options.Symdir != "" {
 		symlink := filepath.Join(w.options.Dir, w.options.Filename+w.options.Suffix)
 		w.options.FS.Remove(symlink)
 		w.options.FS.Symlink(filepath.Join(w.options.Symdir, name), symlink)
