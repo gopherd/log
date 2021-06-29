@@ -56,12 +56,12 @@ func main() {
 	p("package log")
 	for _, t := range types {
 		p()
-		p("func (fields *Fields) ", t.sliceName(), "(key string, value []", t.name, ") *Fields {")
-		p("	if fields != nil {")
-		p("		fields.encoder.encodeKey(key)")
-		p("		fields.encoder.encode", t.sliceName(), "(value)")
+		p("func (recorder *Recorder) ", t.sliceName(), "(key string, value []", t.name, ") *Recorder {")
+		p("	if recorder != nil {")
+		p("		recorder.encoder.encodeKey(key)")
+		p("		recorder.encoder.encode", t.sliceName(), "(value)")
 		p("	}")
-		p("	return fields")
+		p("	return recorder")
 		p("}")
 	}
 

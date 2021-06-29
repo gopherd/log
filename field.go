@@ -9,48 +9,48 @@ import (
 	"time"
 )
 
-// Fields holds context fields
-type Fields struct {
+// Recorder holds context recorder
+type Recorder struct {
 	level   Level
 	prefix  string
 	encoder jsonx
 }
 
-var fieldsPool = sync.Pool{
+var recorderPool = sync.Pool{
 	New: func() interface{} {
-		return new(Fields)
+		return new(Recorder)
 	},
 }
 
-func getFields(level Level, prefix Prefix) *Fields {
+func getRecorder(level Level, prefix Prefix) *Recorder {
 	if gprinter.GetLevel() < level {
 		return nil
 	}
-	fields := fieldsPool.Get().(*Fields)
-	fields.reset(level, string(prefix))
-	return fields
+	recorder := recorderPool.Get().(*Recorder)
+	recorder.reset(level, string(prefix))
+	return recorder
 }
 
-func putFields(fields *Fields) {
-	if fields.encoder.Cap() < 1024 {
-		fieldsPool.Put(fields)
+func putRecorder(recorder *Recorder) {
+	if recorder.encoder.Cap() < 1024 {
+		recorderPool.Put(recorder)
 	}
 }
 
-func (fields *Fields) reset(level Level, prefix string) {
-	fields.level = level
-	fields.prefix = prefix
-	fields.encoder.reset()
+func (recorder *Recorder) reset(level Level, prefix string) {
+	recorder.level = level
+	recorder.prefix = prefix
+	recorder.encoder.reset()
 }
 
-// Print prints logging with context fields. After this call,
-// the fields not available.
-func (fields *Fields) Print(s string) {
-	if fields == nil {
+// Print prints logging with context recorder. After this call,
+// the recorder not available.
+func (recorder *Recorder) Print(s string) {
+	if recorder == nil {
 		return
 	}
-	fields.encoder.finish()
-	fields.encoder.writeString(s)
+	recorder.encoder.finish()
+	recorder.encoder.writeString(s)
 	var (
 		file string
 		line int
@@ -58,251 +58,251 @@ func (fields *Fields) Print(s string) {
 	if gprinter.GetFlags()&(Lshortfile|Llongfile) != 0 {
 		_, file, line, _ = runtime.Caller(1)
 	}
-	gprinter.Printf(file, line, fields.level, fields.prefix, fields.encoder.String())
-	putFields(fields)
+	gprinter.Printf(file, line, recorder.level, recorder.prefix, recorder.encoder.String())
+	putRecorder(recorder)
 }
 
-func (fields *Fields) Int(key string, value int) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeInt(int64(value))
+func (recorder *Recorder) Int(key string, value int) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeInt(int64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Int8(key string, value int8) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeInt(int64(value))
+func (recorder *Recorder) Int8(key string, value int8) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeInt(int64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Int16(key string, value int16) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeInt(int64(value))
+func (recorder *Recorder) Int16(key string, value int16) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeInt(int64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Int32(key string, value int32) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeInt(int64(value))
+func (recorder *Recorder) Int32(key string, value int32) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeInt(int64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Int64(key string, value int64) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeInt(value)
+func (recorder *Recorder) Int64(key string, value int64) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeInt(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Uint(key string, value uint) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeUint(uint64(value))
+func (recorder *Recorder) Uint(key string, value uint) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeUint(uint64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Uint8(key string, value uint8) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeUint(uint64(value))
+func (recorder *Recorder) Uint8(key string, value uint8) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeUint(uint64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Uint16(key string, value uint16) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeUint(uint64(value))
+func (recorder *Recorder) Uint16(key string, value uint16) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeUint(uint64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Uint32(key string, value uint32) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeUint(uint64(value))
+func (recorder *Recorder) Uint32(key string, value uint32) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeUint(uint64(value))
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Uint64(key string, value uint64) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeUint(value)
+func (recorder *Recorder) Uint64(key string, value uint64) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeUint(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Float32(key string, value float32) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeFloat32(value)
+func (recorder *Recorder) Float32(key string, value float32) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeFloat32(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Float64(key string, value float64) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeFloat64(value)
+func (recorder *Recorder) Float64(key string, value float64) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeFloat64(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Complex64(key string, value complex64) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeComplex64(value)
+func (recorder *Recorder) Complex64(key string, value complex64) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeComplex64(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Complex128(key string, value complex128) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeComplex128(value)
+func (recorder *Recorder) Complex128(key string, value complex128) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeComplex128(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Byte(key string, value byte) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeByte(value)
+func (recorder *Recorder) Byte(key string, value byte) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeByte(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Rune(key string, value rune) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeRune(value)
+func (recorder *Recorder) Rune(key string, value rune) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeRune(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Bool(key string, value bool) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeBool(value)
+func (recorder *Recorder) Bool(key string, value bool) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeBool(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) String(key string, value string) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeString(value)
+func (recorder *Recorder) String(key string, value string) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeString(value)
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Error(key string, value error) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
+func (recorder *Recorder) Error(key string, value error) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
 		if value == nil {
-			fields.encoder.encodeNil()
+			recorder.encoder.encodeNil()
 		} else {
-			fields.encoder.buf = strconv.AppendQuote(fields.encoder.buf, value.Error())
+			recorder.encoder.buf = strconv.AppendQuote(recorder.encoder.buf, value.Error())
 		}
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Any(key string, value interface{}) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
+func (recorder *Recorder) Any(key string, value interface{}) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
 		if value == nil {
-			fields.encoder.encodeNil()
+			recorder.encoder.encodeNil()
 		} else {
 			switch x := value.(type) {
 			case error:
-				fields.encoder.encodeString(x.Error())
+				recorder.encoder.encodeString(x.Error())
 			case fmt.Stringer:
-				fields.encoder.encodeString(x.String())
+				recorder.encoder.encodeString(x.String())
 			case string:
-				fields.encoder.encodeString(x)
+				recorder.encoder.encodeString(x)
 			case appendFormatter:
-				fields.encoder.buf = x.AppendFormat(fields.encoder.buf)
+				recorder.encoder.buf = x.AppendFormat(recorder.encoder.buf)
 			default:
-				if !fields.encoder.encodeScalar(value) {
-					fields.encoder.encodeString(fmt.Sprintf("%v", value))
+				if !recorder.encoder.encodeScalar(value) {
+					recorder.encoder.encodeString(fmt.Sprintf("%v", value))
 				}
 			}
 		}
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Type(key string, value interface{}) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
+func (recorder *Recorder) Type(key string, value interface{}) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
 		if value == nil {
-			fields.encoder.encodeString("nil")
+			recorder.encoder.encodeString("nil")
 		} else {
-			fields.encoder.encodeString(reflect.TypeOf(value).String())
+			recorder.encoder.encodeString(reflect.TypeOf(value).String())
 		}
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Exec(key string, stringer func() string) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.encodeString(stringer())
+func (recorder *Recorder) Exec(key string, stringer func() string) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.encodeString(stringer())
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) writeTime(key string, value time.Time, layout string) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
-		fields.encoder.buf = append(fields.encoder.buf, '"')
-		fields.encoder.buf = value.AppendFormat(fields.encoder.buf, layout)
-		fields.encoder.buf = append(fields.encoder.buf, '"')
+func (recorder *Recorder) writeTime(key string, value time.Time, layout string) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
+		recorder.encoder.buf = append(recorder.encoder.buf, '"')
+		recorder.encoder.buf = value.AppendFormat(recorder.encoder.buf, layout)
+		recorder.encoder.buf = append(recorder.encoder.buf, '"')
 	}
-	return fields
+	return recorder
 }
 
-func (fields *Fields) Date(key string, value time.Time) *Fields {
-	return fields.writeTime(key, value, "2006-01-02Z07:00")
+func (recorder *Recorder) Date(key string, value time.Time) *Recorder {
+	return recorder.writeTime(key, value, "2006-01-02Z07:00")
 }
 
-func (fields *Fields) Time(key string, value time.Time) *Fields {
-	return fields.writeTime(key, value, time.RFC3339Nano)
+func (recorder *Recorder) Time(key string, value time.Time) *Recorder {
+	return recorder.writeTime(key, value, time.RFC3339Nano)
 }
 
-func (fields *Fields) Seconds(key string, value time.Time) *Fields {
-	return fields.writeTime(key, value, time.RFC3339)
+func (recorder *Recorder) Seconds(key string, value time.Time) *Recorder {
+	return recorder.writeTime(key, value, time.RFC3339)
 }
 
-func (fields *Fields) Milliseconds(key string, value time.Time) *Fields {
-	return fields.writeTime(key, value, "2006-01-02T15:04:05.999Z07:00")
+func (recorder *Recorder) Milliseconds(key string, value time.Time) *Recorder {
+	return recorder.writeTime(key, value, "2006-01-02T15:04:05.999Z07:00")
 }
 
-func (fields *Fields) Microseconds(key string, value time.Time) *Fields {
-	return fields.writeTime(key, value, "2006-01-02T15:04:05.999999Z07:00")
+func (recorder *Recorder) Microseconds(key string, value time.Time) *Recorder {
+	return recorder.writeTime(key, value, "2006-01-02T15:04:05.999999Z07:00")
 }
 
-func (fields *Fields) Duration(key string, value time.Duration) *Fields {
-	if fields != nil {
-		fields.encoder.encodeKey(key)
+func (recorder *Recorder) Duration(key string, value time.Duration) *Recorder {
+	if recorder != nil {
+		recorder.encoder.encodeKey(key)
 		const reserved = 32
-		l := len(fields.encoder.buf)
-		if cap(fields.encoder.buf)-l < reserved {
-			fields.encoder.grow(reserved)
+		l := len(recorder.encoder.buf)
+		if cap(recorder.encoder.buf)-l < reserved {
+			recorder.encoder.grow(reserved)
 		}
-		n := formatDuration(fields.encoder.buf[l:l+reserved], value)
-		fields.encoder.buf = fields.encoder.buf[:l+n]
+		n := formatDuration(recorder.encoder.buf[l:l+reserved], value)
+		recorder.encoder.buf = recorder.encoder.buf[:l+n]
 	}
-	return fields
+	return recorder
 }

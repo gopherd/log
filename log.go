@@ -726,23 +726,23 @@ func SetLevel(level Level) {
 	gprinter.SetLevel(level)
 }
 
-// Trace creates a context fields with level trace
-func Trace() *Fields { return getFields(LevelTrace, "") }
+// Trace creates a context recorder with level trace
+func Trace() *Recorder { return getRecorder(LevelTrace, "") }
 
-// Debug creates a context fields with level debug
-func Debug() *Fields { return getFields(LevelDebug, "") }
+// Debug creates a context recorder with level debug
+func Debug() *Recorder { return getRecorder(LevelDebug, "") }
 
-// Info creates a context fields with level info
-func Info() *Fields { return getFields(LevelInfo, "") }
+// Info creates a context recorder with level info
+func Info() *Recorder { return getRecorder(LevelInfo, "") }
 
-// Warn creates a context fields with level warn
-func Warn() *Fields { return getFields(LevelWarn, "") }
+// Warn creates a context recorder with level warn
+func Warn() *Recorder { return getRecorder(LevelWarn, "") }
 
-// Error creates a context fields with level error
-func Error() *Fields { return getFields(LevelError, "") }
+// Error creates a context recorder with level error
+func Error() *Recorder { return getRecorder(LevelError, "") }
 
-// Fatal creates a context fields with level fatal
-func Fatal() *Fields { return getFields(LevelFatal, "") }
+// Fatal creates a context recorder with level fatal
+func Fatal() *Recorder { return getRecorder(LevelFatal, "") }
 
 // Printf wraps the global printer Printf method
 func Printf(level Level, format string, args ...interface{}) {
@@ -777,23 +777,23 @@ func Log(calldepth int, level Level, prefix, format string, args ...interface{})
 // Prefix wraps a string as a prefixed logger
 type Prefix string
 
-// Trace creates a context fields with level trace
-func (p Prefix) Trace() *Fields { return getFields(LevelTrace, p) }
+// Trace creates a context recorder with level trace
+func (p Prefix) Trace() *Recorder { return getRecorder(LevelTrace, p) }
 
-// Debug creates a context fields with level debug
-func (p Prefix) Debug() *Fields { return getFields(LevelDebug, p) }
+// Debug creates a context recorder with level debug
+func (p Prefix) Debug() *Recorder { return getRecorder(LevelDebug, p) }
 
-// Info creates a context fields with level info
-func (p Prefix) Info() *Fields { return getFields(LevelInfo, p) }
+// Info creates a context recorder with level info
+func (p Prefix) Info() *Recorder { return getRecorder(LevelInfo, p) }
 
-// Warn creates a context fields with level warn
-func (p Prefix) Warn() *Fields { return getFields(LevelWarn, p) }
+// Warn creates a context recorder with level warn
+func (p Prefix) Warn() *Recorder { return getRecorder(LevelWarn, p) }
 
-// Error creates a context fields with level error
-func (p Prefix) Error() *Fields { return getFields(LevelError, p) }
+// Error creates a context recorder with level error
+func (p Prefix) Error() *Recorder { return getRecorder(LevelError, p) }
 
-// Fatal creates a context fields with level fatal
-func (p Prefix) Fatal() *Fields { return getFields(LevelFatal, p) }
+// Fatal creates a context recorder with level fatal
+func (p Prefix) Fatal() *Recorder { return getRecorder(LevelFatal, p) }
 
 // Printf wraps the global printer Printf method
 func (p Prefix) Printf(level Level, format string, args ...interface{}) {

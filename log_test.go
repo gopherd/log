@@ -43,40 +43,40 @@ func TestWriter(t *testing.T) {
 	}
 }
 
-func ExampleFields() {
+func ExampleRecorder() {
 	writer := new(testingLogWriter)
 	log.Start(log.WithWriters(writer), log.WithLevel(log.LevelInfo), log.WithPrefix("testing"))
-	log.Info().Int("int", 123456).Print("fields")
-	log.Info().Int8("int8", -12).Print("fields")
-	log.Info().Int16("int16", 1234).Print("fields")
-	log.Info().Int32("int32", -12345678).Print("fields")
-	log.Info().Int64("int64", 1234567890).Print("fields")
-	log.Info().Uint("uint", 123456).Print("fields")
-	log.Info().Uint8("uint8", 120).Print("fields")
-	log.Info().Uint16("uint16", 12340).Print("fields")
-	log.Info().Uint32("uint32", 123456780).Print("fields")
-	log.Info().Uint64("uint64", 12345678900).Print("fields")
-	log.Info().Float32("float32", 1234.5678).Print("fields")
-	log.Info().Float64("float64", 0.123456789).Print("fields")
-	log.Info().Complex64("complex64", 1+2i).Print("fields")
-	log.Info().Complex128("complex128", 1).Print("fields")
-	log.Info().Complex128("complex128", 2i).Print("fields")
-	log.Info().Byte("byte", 'h').Print("fields")
-	log.Info().Rune("rune", 'Å').Print("fields")
-	log.Info().Bool("bool", true).Print("fields")
-	log.Info().Bool("bool", false).Print("fields")
-	log.Info().String("string", "hello").Print("fields")
-	log.Info().Error("error", nil).Print("fields")
-	log.Info().Error("error", errors.New("err")).Print("fields")
-	log.Info().Any("any", nil).Print("fields")
-	log.Info().Any("any", "nil").Print("fields")
+	log.Info().Int("int", 123456).Print("recorder")
+	log.Info().Int8("int8", -12).Print("recorder")
+	log.Info().Int16("int16", 1234).Print("recorder")
+	log.Info().Int32("int32", -12345678).Print("recorder")
+	log.Info().Int64("int64", 1234567890).Print("recorder")
+	log.Info().Uint("uint", 123456).Print("recorder")
+	log.Info().Uint8("uint8", 120).Print("recorder")
+	log.Info().Uint16("uint16", 12340).Print("recorder")
+	log.Info().Uint32("uint32", 123456780).Print("recorder")
+	log.Info().Uint64("uint64", 12345678900).Print("recorder")
+	log.Info().Float32("float32", 1234.5678).Print("recorder")
+	log.Info().Float64("float64", 0.123456789).Print("recorder")
+	log.Info().Complex64("complex64", 1+2i).Print("recorder")
+	log.Info().Complex128("complex128", 1).Print("recorder")
+	log.Info().Complex128("complex128", 2i).Print("recorder")
+	log.Info().Byte("byte", 'h').Print("recorder")
+	log.Info().Rune("rune", 'Å').Print("recorder")
+	log.Info().Bool("bool", true).Print("recorder")
+	log.Info().Bool("bool", false).Print("recorder")
+	log.Info().String("string", "hello").Print("recorder")
+	log.Info().Error("error", nil).Print("recorder")
+	log.Info().Error("error", errors.New("err")).Print("recorder")
+	log.Info().Any("any", nil).Print("recorder")
+	log.Info().Any("any", "nil").Print("recorder")
 	log.Info().Any("any", struct {
 		x int
 		y string
-	}{1, "hello"}).Print("fields")
-	log.Info().Type("type", nil).Print("fields")
-	log.Info().Type("type", "string").Print("fields")
-	log.Info().Type("type", new(int)).Print("fields")
+	}{1, "hello"}).Print("recorder")
+	log.Info().Type("type", nil).Print("recorder")
+	log.Info().Type("type", "string").Print("recorder")
+	log.Info().Type("type", new(int)).Print("recorder")
 	const (
 		year  = 2020
 		month = time.May
@@ -87,14 +87,14 @@ func ExampleFields() {
 		nsec  = 123456789
 	)
 	t := time.Date(year, month, day, hour, min, sec, nsec, time.Local)
-	log.Info().Date("date", t).Print("fields")
-	log.Info().Time("time", t).Print("fields")
-	log.Info().Duration("duration", time.Millisecond*1200).Print("fields")
-	log.Info().String("$name", "hello").Print("fields")
-	log.Info().String("name of", "hello").Print("fields")
-	log.Info().Int32s("int32s", []int32{1, 3, 5}).Print("fields")
-	log.Info().Strings("strings", []string{"x", "x y", "z"}).Print("fields")
-	log.Info().Bytes("bytes", []byte{'1', '3', 'x'}).Print("fields")
+	log.Info().Date("date", t).Print("recorder")
+	log.Info().Time("time", t).Print("recorder")
+	log.Info().Duration("duration", time.Millisecond*1200).Print("recorder")
+	log.Info().String("$name", "hello").Print("recorder")
+	log.Info().String("name of", "hello").Print("recorder")
+	log.Info().Int32s("int32s", []int32{1, 3, 5}).Print("recorder")
+	log.Info().Strings("strings", []string{"x", "x y", "z"}).Print("recorder")
+	log.Info().Bytes("bytes", []byte{'1', '3', 'x'}).Print("recorder")
 	log.Prefix("prefix").Info().
 		String("k1", "v1").
 		Int("k2", 2).
@@ -103,42 +103,42 @@ func ExampleFields() {
 	log.Shutdown()
 	fmt.Print(writer.buf.String())
 	// Output:
-	// [INFO] (testing) {int:123456} fields
-	// [INFO] (testing) {int8:-12} fields
-	// [INFO] (testing) {int16:1234} fields
-	// [INFO] (testing) {int32:-12345678} fields
-	// [INFO] (testing) {int64:1234567890} fields
-	// [INFO] (testing) {uint:123456} fields
-	// [INFO] (testing) {uint8:120} fields
-	// [INFO] (testing) {uint16:12340} fields
-	// [INFO] (testing) {uint32:123456780} fields
-	// [INFO] (testing) {uint64:12345678900} fields
-	// [INFO] (testing) {float32:1234.5677} fields
-	// [INFO] (testing) {float64:0.123456789} fields
-	// [INFO] (testing) {complex64:1+2i} fields
-	// [INFO] (testing) {complex128:1} fields
-	// [INFO] (testing) {complex128:2i} fields
-	// [INFO] (testing) {byte:'h'} fields
-	// [INFO] (testing) {rune:'Å'} fields
-	// [INFO] (testing) {bool:true} fields
-	// [INFO] (testing) {bool:false} fields
-	// [INFO] (testing) {string:"hello"} fields
-	// [INFO] (testing) {error:nil} fields
-	// [INFO] (testing) {error:"err"} fields
-	// [INFO] (testing) {any:nil} fields
-	// [INFO] (testing) {any:"nil"} fields
-	// [INFO] (testing) {any:"{1 hello}"} fields
-	// [INFO] (testing) {type:"nil"} fields
-	// [INFO] (testing) {type:"string"} fields
-	// [INFO] (testing) {type:"*int"} fields
-	// [INFO] (testing) {date:"2020-05-01+08:00"} fields
-	// [INFO] (testing) {time:"2020-05-01T12:20:30.123456789+08:00"} fields
-	// [INFO] (testing) {duration:1.2s} fields
-	// [INFO] (testing) {$name:"hello"} fields
-	// [INFO] (testing) {"name of":"hello"} fields
-	// [INFO] (testing) {int32s:[1,3,5]} fields
-	// [INFO] (testing) {strings:["x","x y","z"]} fields
-	// [INFO] (testing) {bytes:0x313378} fields
+	// [INFO] (testing) {int:123456} recorder
+	// [INFO] (testing) {int8:-12} recorder
+	// [INFO] (testing) {int16:1234} recorder
+	// [INFO] (testing) {int32:-12345678} recorder
+	// [INFO] (testing) {int64:1234567890} recorder
+	// [INFO] (testing) {uint:123456} recorder
+	// [INFO] (testing) {uint8:120} recorder
+	// [INFO] (testing) {uint16:12340} recorder
+	// [INFO] (testing) {uint32:123456780} recorder
+	// [INFO] (testing) {uint64:12345678900} recorder
+	// [INFO] (testing) {float32:1234.5677} recorder
+	// [INFO] (testing) {float64:0.123456789} recorder
+	// [INFO] (testing) {complex64:1+2i} recorder
+	// [INFO] (testing) {complex128:1} recorder
+	// [INFO] (testing) {complex128:2i} recorder
+	// [INFO] (testing) {byte:'h'} recorder
+	// [INFO] (testing) {rune:'Å'} recorder
+	// [INFO] (testing) {bool:true} recorder
+	// [INFO] (testing) {bool:false} recorder
+	// [INFO] (testing) {string:"hello"} recorder
+	// [INFO] (testing) {error:nil} recorder
+	// [INFO] (testing) {error:"err"} recorder
+	// [INFO] (testing) {any:nil} recorder
+	// [INFO] (testing) {any:"nil"} recorder
+	// [INFO] (testing) {any:"{1 hello}"} recorder
+	// [INFO] (testing) {type:"nil"} recorder
+	// [INFO] (testing) {type:"string"} recorder
+	// [INFO] (testing) {type:"*int"} recorder
+	// [INFO] (testing) {date:"2020-05-01+08:00"} recorder
+	// [INFO] (testing) {time:"2020-05-01T12:20:30.123456789+08:00"} recorder
+	// [INFO] (testing) {duration:1.2s} recorder
+	// [INFO] (testing) {$name:"hello"} recorder
+	// [INFO] (testing) {"name of":"hello"} recorder
+	// [INFO] (testing) {int32s:[1,3,5]} recorder
+	// [INFO] (testing) {strings:["x","x y","z"]} recorder
+	// [INFO] (testing) {bytes:0x313378} recorder
 	// [INFO] (testing/prefix) {k1:"v1",k2:2} prefix logging
 }
 
@@ -170,7 +170,7 @@ func benchmarkTeardown(b *testing.B) {
 	b.StartTimer()
 }
 
-func benchmarkFields(b *testing.B, caller, on bool) {
+func benchmarkRecorder(b *testing.B, caller, on bool) {
 	benchmarkSetup(b, caller, on)
 	for i := 0; i < b.N; i++ {
 		log.Debug().
@@ -179,14 +179,14 @@ func benchmarkFields(b *testing.B, caller, on bool) {
 			Float64("float64", 0.123456789).
 			String("string", "hello").
 			Duration("duration", time.Microsecond*1234567890).
-			Print("benchmark fields")
+			Print("benchmark recorder")
 	}
 	benchmarkTeardown(b)
 }
 
-func BenchmarkWithCaller(b *testing.B)    { benchmarkFields(b, true, false) }
-func BenchmarkWithoutCaller(b *testing.B) { benchmarkFields(b, false, false) }
-func BenchmarkOff(b *testing.B)           { benchmarkFields(b, true, true) }
+func BenchmarkWithCaller(b *testing.B)    { benchmarkRecorder(b, true, false) }
+func BenchmarkWithoutCaller(b *testing.B) { benchmarkRecorder(b, false, false) }
+func BenchmarkOff(b *testing.B)           { benchmarkRecorder(b, true, true) }
 
 // testFS implements File interface
 type testFile struct {
