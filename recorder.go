@@ -13,7 +13,7 @@ import (
 type Recorder struct {
 	level   Level
 	prefix  string
-	encoder jsonx
+	encoder encoder
 }
 
 var recorderPool = sync.Pool{

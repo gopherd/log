@@ -26,173 +26,173 @@ func isIdentRune(ch rune, i int) bool {
 		unicode.IsLetter(ch) || unicode.IsDigit(ch)
 }
 
-// jsonx used to build json with some extra features:
+// encoder used to build json with some extra features:
 //
 // 1. support unqutoed key
 // 2. support literal complex, e.g. 1.5+2i, 2i
 // 3. support literal duration, e.g. 1s, 1ms
 // 4. support literal nil
 // 5. support bytes starts with 0x
-type jsonx struct {
+type encoder struct {
 	buf []byte
 }
 
 // String returns the accumulated string.
-func (b *jsonx) String() string {
-	return *(*string)(unsafe.Pointer(&b.buf))
+func (enc *encoder) String() string {
+	return *(*string)(unsafe.Pointer(&enc.buf))
 }
 
-// Len returns the number of accumulated bytes; b.Len() == len(b.String()).
-func (b *jsonx) Len() int { return len(b.buf) }
+// Len returns the number of accumulated bytes; enc.Len() == len(enc.String()).
+func (enc *encoder) Len() int { return len(enc.buf) }
 
 // Cap returns the capacity of the builder's underlying byte slice. It is the
 // total space allocated for the string being built and includes any bytes
 // already written.
-func (b *jsonx) Cap() int { return cap(b.buf) }
+func (enc *encoder) Cap() int { return cap(enc.buf) }
 
 // Write implements io.Writer Write method
-func (b *jsonx) Write(p []byte) (int, error) {
-	b.buf = append(b.buf, p...)
+func (enc *encoder) Write(p []byte) (int, error) {
+	enc.buf = append(enc.buf, p...)
 	return len(p), nil
-}
-
-func (b *jsonx) reset() {
-	b.buf = b.buf[:0]
 }
 
 // grow copies the buffer to a new, larger buffer so that there are at least n
 // bytes of capacity beyond len(b.buf).
-func (b *jsonx) grow(n int) {
-	buf := make([]byte, len(b.buf), 2*cap(b.buf)+n)
-	copy(buf, b.buf)
-	b.buf = buf
+func (enc *encoder) grow(n int) {
+	buf := make([]byte, len(enc.buf), 2*cap(enc.buf)+n)
+	copy(buf, enc.buf)
+	enc.buf = buf
 }
 
-func (b *jsonx) writeByte(c byte) {
-	b.buf = append(b.buf, c)
+func (enc *encoder) reset() {
+	enc.buf = enc.buf[:0]
 }
 
-func (b *jsonx) writeString(s string) {
-	b.buf = append(b.buf, s...)
+func (enc *encoder) writeByte(c byte) {
+	enc.buf = append(enc.buf, c)
 }
 
-func (b *jsonx) encodeKey(key string) {
-	if len(b.buf) == 0 {
-		b.writeByte('{')
+func (enc *encoder) writeString(s string) {
+	enc.buf = append(enc.buf, s...)
+}
+
+func (enc *encoder) encodeKey(key string) {
+	if len(enc.buf) == 0 {
+		enc.writeByte('{')
 	} else {
-		b.writeByte(',')
+		enc.writeByte(',')
 	}
 	if isIdent(key) {
-		b.buf = append(b.buf, key...)
+		enc.buf = append(enc.buf, key...)
 	} else {
-		b.encodeString(key)
+		enc.encodeString(key)
 	}
-	b.writeByte(':')
+	enc.writeByte(':')
 }
 
-func (b *jsonx) finish() {
-	if len(b.buf) > 0 {
-		b.buf = append(b.buf, '}', ' ')
+func (enc *encoder) finish() {
+	if len(enc.buf) > 0 {
+		enc.buf = append(enc.buf, '}', ' ')
 	}
 }
 
-func (b *jsonx) encodeNil() {
-	b.buf = append(b.buf, "nil"...)
+func (enc *encoder) encodeNil() {
+	enc.buf = append(enc.buf, "nil"...)
 }
 
-func (b *jsonx) encodeByte(c byte) {
-	b.buf = append(b.buf, '\'', c, '\'')
+func (enc *encoder) encodeByte(c byte) {
+	enc.buf = append(enc.buf, '\'', c, '\'')
 }
 
-func (b *jsonx) encodeRune(r rune) {
-	b.buf = strconv.AppendQuoteRune(b.buf, r)
+func (enc *encoder) encodeRune(r rune) {
+	enc.buf = strconv.AppendQuoteRune(enc.buf, r)
 }
 
-func (b *jsonx) encodeString(s string) {
-	b.buf = strconv.AppendQuote(b.buf, s)
+func (enc *encoder) encodeString(s string) {
+	enc.buf = strconv.AppendQuote(enc.buf, s)
 }
 
-func (b *jsonx) encodeInt(i int64) {
-	b.buf = strconv.AppendInt(b.buf, i, 10)
+func (enc *encoder) encodeInt(i int64) {
+	enc.buf = strconv.AppendInt(enc.buf, i, 10)
 }
 
-func (b *jsonx) encodeUint(i uint64) {
-	b.buf = strconv.AppendUint(b.buf, i, 10)
+func (enc *encoder) encodeUint(i uint64) {
+	enc.buf = strconv.AppendUint(enc.buf, i, 10)
 }
 
-func (b *jsonx) encodeFloat(f float64, bits int) {
-	b.buf = strconv.AppendFloat(b.buf, f, 'f', -1, bits)
+func (enc *encoder) encodeFloat(f float64, bits int) {
+	enc.buf = strconv.AppendFloat(enc.buf, f, 'f', -1, bits)
 }
 
-func (b *jsonx) encodeFloat32(f float32) {
-	b.encodeFloat(float64(f), 32)
+func (enc *encoder) encodeFloat32(f float32) {
+	enc.encodeFloat(float64(f), 32)
 }
 
-func (b *jsonx) encodeFloat64(f float64) {
-	b.encodeFloat(f, 64)
+func (enc *encoder) encodeFloat64(f float64) {
+	enc.encodeFloat(f, 64)
 }
 
-func (b *jsonx) encodeBool(v bool) {
-	b.buf = strconv.AppendBool(b.buf, v)
+func (enc *encoder) encodeBool(v bool) {
+	enc.buf = strconv.AppendBool(enc.buf, v)
 }
 
-func (b *jsonx) encodeComplex(r, i float64, bits int) {
+func (enc *encoder) encodeComplex(r, i float64, bits int) {
 	if r != 0 {
-		b.encodeFloat(r, bits)
+		enc.encodeFloat(r, bits)
 	}
 	if i != 0 {
 		if r != 0 {
-			b.buf = append(b.buf, '+')
+			enc.buf = append(enc.buf, '+')
 		}
-		b.encodeFloat(i, bits)
-		b.buf = append(b.buf, 'i')
+		enc.encodeFloat(i, bits)
+		enc.buf = append(enc.buf, 'i')
 	} else if r == 0 {
-		b.buf = append(b.buf, '0')
+		enc.buf = append(enc.buf, '0')
 	}
 }
 
-func (b *jsonx) encodeComplex64(c complex64) {
+func (enc *encoder) encodeComplex64(c complex64) {
 	r, i := real(c), imag(c)
-	b.encodeComplex(float64(r), float64(i), 32)
+	enc.encodeComplex(float64(r), float64(i), 32)
 }
 
-func (b *jsonx) encodeComplex128(c complex128) {
+func (enc *encoder) encodeComplex128(c complex128) {
 	r, i := real(c), imag(c)
-	b.encodeComplex(r, i, 64)
+	enc.encodeComplex(r, i, 64)
 }
 
-func (b *jsonx) encodeScalar(value interface{}) bool {
+func (enc *encoder) encodeScalar(value interface{}) bool {
 	switch x := value.(type) {
 	case int:
-		b.encodeInt(int64(x))
+		enc.encodeInt(int64(x))
 	case int8:
-		b.encodeInt(int64(x))
+		enc.encodeInt(int64(x))
 	case int16:
-		b.encodeInt(int64(x))
+		enc.encodeInt(int64(x))
 	case int32:
-		b.encodeInt(int64(x))
+		enc.encodeInt(int64(x))
 	case int64:
-		b.encodeInt(x)
+		enc.encodeInt(x)
 	case uint:
-		b.encodeUint(uint64(x))
+		enc.encodeUint(uint64(x))
 	case uint8:
-		b.encodeUint(uint64(x))
+		enc.encodeUint(uint64(x))
 	case uint16:
-		b.encodeUint(uint64(x))
+		enc.encodeUint(uint64(x))
 	case uint32:
-		b.encodeUint(uint64(x))
+		enc.encodeUint(uint64(x))
 	case uint64:
-		b.encodeUint(x)
+		enc.encodeUint(x)
 	case float32:
-		b.encodeFloat32(x)
+		enc.encodeFloat32(x)
 	case float64:
-		b.encodeFloat64(x)
+		enc.encodeFloat64(x)
 	case bool:
-		b.encodeBool(x)
+		enc.encodeBool(x)
 	case complex64:
-		b.encodeComplex64(x)
+		enc.encodeComplex64(x)
 	case complex128:
-		b.encodeComplex128(x)
+		enc.encodeComplex128(x)
 	default:
 		return false
 	}

@@ -67,38 +67,38 @@ func main() {
 
 	for _, t := range types {
 		p()
-		p("func (b *jsonx) encode", t.sliceName(), "(s []", t.name, ") {")
+		p("func (enc *encoder) encode", t.sliceName(), "(s []", t.name, ") {")
 		if t.name != "byte" {
-			p("\tb.writeByte('[')")
+			p("\tenc.writeByte('[')")
 		} else {
-			p("\tb.writeString(\"0x\")")
+			p("\tenc.writeString(\"0x\")")
 		}
 		p("\tfor i := range s {")
 		if t.name != "byte" {
 			p("\t\tif i > 0 {")
-			p("\t\t\tb.writeByte(',')")
+			p("\t\t\tenc.writeByte(',')")
 			p("\t\t}")
 		}
 		if t.isInt() {
-			p("\t\tb.encodeInt(int64(s[i]))")
+			p("\t\tenc.encodeInt(int64(s[i]))")
 		} else if t.isUint() {
-			p("\t\tb.encodeUint(uint64(s[i]))")
+			p("\t\tenc.encodeUint(uint64(s[i]))")
 		} else if t.isFloat() {
-			p("\t\tb.encodeFloat(float64(s[i]), ", t.bits(), ")")
+			p("\t\tenc.encodeFloat(float64(s[i]), ", t.bits(), ")")
 		} else if t.isComplex() {
-			p("\t\tb.encodeComplex(float64(real(s[i])), float64(imag(s[i])), ", t.bits(), ")")
+			p("\t\tenc.encodeComplex(float64(real(s[i])), float64(imag(s[i])), ", t.bits(), ")")
 		} else if t.name == "bool" {
-			p("\t\tb.encodeBool(s[i])")
+			p("\t\tenc.encodeBool(s[i])")
 		} else if t.name == "string" {
-			p("\t\tb.encodeString(s[i])")
+			p("\t\tenc.encodeString(s[i])")
 		} else if t.name == "byte" {
 			p("\t\th, l := s[i]>>4, s[i]&0xF")
-			p("\t\tb.writeByte(hex[h])")
-			p("\t\tb.writeByte(hex[l])")
+			p("\t\tenc.writeByte(hex[h])")
+			p("\t\tenc.writeByte(hex[l])")
 		}
 		p("\t}")
 		if t.name != "byte" {
-			p("\tb.writeByte(']')")
+			p("\tenc.writeByte(']')")
 		}
 		p("}")
 	}

@@ -137,187 +137,187 @@ func (recorder *Recorder) Bytes(key string, value []byte) *Recorder {
 	return recorder
 }
 
-func (b *jsonx) encodeInts(s []int) {
-	b.writeByte('[')
+func (enc *encoder) encodeInts(s []int) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeInt(int64(s[i]))
+		enc.encodeInt(int64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeInt8s(s []int8) {
-	b.writeByte('[')
+func (enc *encoder) encodeInt8s(s []int8) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeInt(int64(s[i]))
+		enc.encodeInt(int64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeInt16s(s []int16) {
-	b.writeByte('[')
+func (enc *encoder) encodeInt16s(s []int16) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeInt(int64(s[i]))
+		enc.encodeInt(int64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeInt32s(s []int32) {
-	b.writeByte('[')
+func (enc *encoder) encodeInt32s(s []int32) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeInt(int64(s[i]))
+		enc.encodeInt(int64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeInt64s(s []int64) {
-	b.writeByte('[')
+func (enc *encoder) encodeInt64s(s []int64) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeInt(int64(s[i]))
+		enc.encodeInt(int64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeUints(s []uint) {
-	b.writeByte('[')
+func (enc *encoder) encodeUints(s []uint) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeUint(uint64(s[i]))
+		enc.encodeUint(uint64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeUint8s(s []uint8) {
-	b.writeByte('[')
+func (enc *encoder) encodeUint8s(s []uint8) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeUint(uint64(s[i]))
+		enc.encodeUint(uint64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeUint16s(s []uint16) {
-	b.writeByte('[')
+func (enc *encoder) encodeUint16s(s []uint16) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeUint(uint64(s[i]))
+		enc.encodeUint(uint64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeUint32s(s []uint32) {
-	b.writeByte('[')
+func (enc *encoder) encodeUint32s(s []uint32) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeUint(uint64(s[i]))
+		enc.encodeUint(uint64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeUint64s(s []uint64) {
-	b.writeByte('[')
+func (enc *encoder) encodeUint64s(s []uint64) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeUint(uint64(s[i]))
+		enc.encodeUint(uint64(s[i]))
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeFloat32s(s []float32) {
-	b.writeByte('[')
+func (enc *encoder) encodeFloat32s(s []float32) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeFloat(float64(s[i]), 32)
+		enc.encodeFloat(float64(s[i]), 32)
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeFloat64s(s []float64) {
-	b.writeByte('[')
+func (enc *encoder) encodeFloat64s(s []float64) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeFloat(float64(s[i]), 64)
+		enc.encodeFloat(float64(s[i]), 64)
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeComplex64s(s []complex64) {
-	b.writeByte('[')
+func (enc *encoder) encodeComplex64s(s []complex64) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeComplex(float64(real(s[i])), float64(imag(s[i])), 32)
+		enc.encodeComplex(float64(real(s[i])), float64(imag(s[i])), 32)
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeComplex128s(s []complex128) {
-	b.writeByte('[')
+func (enc *encoder) encodeComplex128s(s []complex128) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeComplex(float64(real(s[i])), float64(imag(s[i])), 64)
+		enc.encodeComplex(float64(real(s[i])), float64(imag(s[i])), 64)
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeBools(s []bool) {
-	b.writeByte('[')
+func (enc *encoder) encodeBools(s []bool) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeBool(s[i])
+		enc.encodeBool(s[i])
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeStrings(s []string) {
-	b.writeByte('[')
+func (enc *encoder) encodeStrings(s []string) {
+	enc.writeByte('[')
 	for i := range s {
 		if i > 0 {
-			b.writeByte(',')
+			enc.writeByte(',')
 		}
-		b.encodeString(s[i])
+		enc.encodeString(s[i])
 	}
-	b.writeByte(']')
+	enc.writeByte(']')
 }
 
-func (b *jsonx) encodeBytes(s []byte) {
-	b.writeString("0x")
+func (enc *encoder) encodeBytes(s []byte) {
+	enc.writeString("0x")
 	for i := range s {
 		h, l := s[i]>>4, s[i]&0xF
-		b.writeByte(hex[h])
-		b.writeByte(hex[l])
+		enc.writeByte(hex[h])
+		enc.writeByte(hex[l])
 	}
 }
