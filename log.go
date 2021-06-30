@@ -380,7 +380,7 @@ func (p *printer) Printf(file string, line int, level Level, prefix, format stri
 }
 
 func (p *printer) writeEntry(e *entry) {
-	p.writer.Write(e.level, e.Bytes(), e.header)
+	p.writer.Write(e.level, e.buf.Bytes(), e.header)
 	p.putEntry(e)
 }
 
@@ -389,7 +389,7 @@ func (p *printer) getEntry() *entry {
 	if b := p.entryList; b != nil {
 		p.entryList = b.next
 		b.next = nil
-		b.Reset()
+		b.reset()
 		p.entryListLocker.Unlock()
 		return b
 	}
@@ -398,7 +398,7 @@ func (p *printer) getEntry() *entry {
 }
 
 func (p *printer) putEntry(e *entry) {
-	if e.Len() > 256 {
+	if e.buf.Len() > 256 {
 		return
 	}
 	p.entryListLocker.Lock()
@@ -446,17 +446,17 @@ func (p *printer) formatHeader(level Level, file string, line, flags int) *entry
 	}
 	if caller {
 		e.tmp[off] = ' '
-		e.Write(e.tmp[:off+1])
-		e.WriteString(file)
+		e.buf.Write(e.tmp[:off+1])
+		e.buf.WriteString(file)
 		e.tmp[0] = ':'
 		n := someDigits(e, 1, line)
 		e.tmp[n+1] = ']'
 		e.tmp[n+2] = ' '
-		e.Write(e.tmp[:n+3])
+		e.buf.Write(e.tmp[:n+3])
 	} else {
 		e.tmp[off] = ']'
 		e.tmp[off+1] = ' '
-		e.Write(e.tmp[:off+2])
+		e.buf.Write(e.tmp[:off+2])
 	}
 
 	return e
@@ -475,36 +475,36 @@ func (p *printer) output(flags int, level Level, file string, line int, prefix, 
 		}
 	}
 	e := p.formatHeader(level, file, line, flags)
-	e.header = e.Len()
+	e.header = e.buf.Len()
 	if len(p.prefix) > 0 {
-		e.WriteByte('(')
-		e.WriteString(p.prefix)
+		e.buf.WriteByte('(')
+		e.buf.WriteString(p.prefix)
 		if len(prefix) > 0 {
-			e.WriteByte('/')
-			e.WriteString(prefix)
+			e.buf.WriteByte('/')
+			e.buf.WriteString(prefix)
 		}
-		e.WriteString(") ")
+		e.buf.WriteString(") ")
 	} else if len(prefix) > 0 {
-		e.WriteByte('(')
-		e.WriteString(prefix)
-		e.WriteString(") ")
+		e.buf.WriteByte('(')
+		e.buf.WriteString(prefix)
+		e.buf.WriteString(") ")
 	}
 	if len(args) == 0 {
-		e.WriteString(format)
+		e.buf.WriteString(format)
 	} else {
-		fmt.Fprintf(e, format, args...)
+		fmt.Fprintf(&e.buf, format, args...)
 	}
-	if e.Len() == 0 {
+	if e.buf.Len() == 0 {
 		return
 	}
-	if e.Bytes()[e.Len()-1] != '\n' {
-		e.WriteByte('\n')
+	if e.buf.Bytes()[e.buf.Len()-1] != '\n' {
+		e.buf.WriteByte('\n')
 	}
 	if level == LevelFatal {
 		stackBuf := stack(4)
-		e.WriteString("========= BEGIN STACK TRACE =========\n")
-		e.Write(stackBuf)
-		e.WriteString("========== END STACK TRACE ==========\n")
+		e.buf.WriteString("========= BEGIN STACK TRACE =========\n")
+		e.buf.Write(stackBuf)
+		e.buf.WriteString("========== END STACK TRACE ==========\n")
 	}
 	e.level = level
 	if p.queue != nil && atomic.LoadInt32(&p.running) != 0 {

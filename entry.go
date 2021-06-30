@@ -5,19 +5,17 @@ import (
 )
 
 type entry struct {
-	bytes.Buffer
+	buf    bytes.Buffer
 	tmp    [64]byte
 	next   *entry
 	level  Level
 	header int
 }
 
-func (e *entry) Reset() {
-	e.Buffer.Reset()
+func (e *entry) reset() {
+	e.buf.Reset()
 	e.header = 0
 }
-
-func (e *entry) Level() Level { return e.level }
 
 const digits = "0123456789"
 
