@@ -22,7 +22,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 // flags
-var funcs, methods stringSetFlag
+var funcs, methods stringSet
 
 func init() {
 	var sb strings.Builder
@@ -99,9 +99,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-type stringSetFlag map[string]bool
+type stringSet map[string]bool
 
-func (ss *stringSetFlag) String() string {
+func (ss *stringSet) String() string {
 	var items []string
 	for item := range *ss {
 		items = append(items, item)
@@ -110,7 +110,7 @@ func (ss *stringSetFlag) String() string {
 	return strings.Join(items, ",")
 }
 
-func (ss *stringSetFlag) Set(s string) error {
+func (ss *stringSet) Set(s string) error {
 	m := make(map[string]bool) // clobber previous value
 	if s != "" {
 		for _, name := range strings.Split(s, ",") {
