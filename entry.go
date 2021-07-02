@@ -43,6 +43,20 @@ func fourDigits(e *entry, begin int, v int) {
 	e.tmp[begin] = digits[v%10]
 }
 
+func sixDigits(e *entry, begin int, v int) {
+	e.tmp[begin+5] = digits[v%10]
+	v /= 10
+	e.tmp[begin+4] = digits[v%10]
+	v /= 10
+	e.tmp[begin+3] = digits[v%10]
+	v /= 10
+	e.tmp[begin+2] = digits[v%10]
+	v /= 10
+	e.tmp[begin+1] = digits[v%10]
+	v /= 10
+	e.tmp[begin] = digits[v%10]
+}
+
 func someDigits(e *entry, begin int, v int) int {
 	j := len(e.tmp)
 	for {
