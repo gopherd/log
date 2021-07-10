@@ -1,9 +1,9 @@
 // +build gopherd_log_genslice
-
-// command to generate slice.go
+//
+// command to generate slice.go:
 //
 //	go run genslice.go > slice.go
-//
+
 package main
 
 import (
