@@ -132,7 +132,7 @@ func ParseLevel(s string) (lv Level, ok bool) {
 	return LevelInfo, false
 }
 
-type startOptions struct {
+type options struct {
 	flags   int
 	sync    bool
 	level   Level
@@ -142,14 +142,14 @@ type startOptions struct {
 	errors  []error
 }
 
-func defaultStartOptions() startOptions {
-	return startOptions{
+func defaultStartOptions() options {
+	return options{
 		flags: LdefaultFlags,
 		level: LevelInfo,
 	}
 }
 
-func (opt *startOptions) apply(options []Option) {
+func (opt *options) apply(options []Option) {
 	for i := range options {
 		if options[i] != nil {
 			options[i](opt)
@@ -158,31 +158,31 @@ func (opt *startOptions) apply(options []Option) {
 }
 
 // Option is option for Start
-type Option func(*startOptions)
+type Option func(*options)
 
 func errOption(err error) Option {
-	return func(opt *startOptions) {
+	return func(opt *options) {
 		opt.errors = append(opt.errors, err)
 	}
 }
 
 // WithSync synchronize outputs log or not
 func WithSync(yes bool) Option {
-	return func(opt *startOptions) {
+	return func(opt *options) {
 		opt.sync = yes
 	}
 }
 
 // WithFlags enable or disable flags information
 func WithFlags(flags int) Option {
-	return func(opt *startOptions) {
+	return func(opt *options) {
 		opt.flags = flags
 	}
 }
 
 // WithLevel sets log level
 func WithLevel(level Level) Option {
-	return func(opt *startOptions) {
+	return func(opt *options) {
 		opt.level = level
 	}
 }
@@ -192,7 +192,7 @@ func WithPrinter(printer Printer) Option {
 	if printer == nil {
 		panic("log: with a nil printer")
 	}
-	return func(opt *startOptions) {
+	return func(opt *options) {
 		if opt.printer != nil {
 			panic("log: printer already specified")
 		}
@@ -215,7 +215,7 @@ func WithWriters(writers ...Writer) Option {
 	}
 	var copied = make([]Writer, len(writers))
 	copy(copied, writers)
-	return func(opt *startOptions) {
+	return func(opt *options) {
 		if opt.printer != nil {
 			panic("log: couldn't specify writer if a printer specified")
 		}
@@ -319,22 +319,22 @@ func (logger *Logger) SetLevel(level Level) {
 }
 
 // Trace creates a context with level trace
-func (logger *Logger) Trace() *Context { return getContext(logger, LevelTrace) }
+func (logger *Logger) Trace() *Context { return getContext(logger, LevelTrace, logger.prefix) }
 
 // Debug creates a context with level debug
-func (logger *Logger) Debug() *Context { return getContext(logger, LevelDebug) }
+func (logger *Logger) Debug() *Context { return getContext(logger, LevelDebug, logger.prefix) }
 
 // Info creates a context with level info
-func (logger *Logger) Info() *Context { return getContext(logger, LevelInfo) }
+func (logger *Logger) Info() *Context { return getContext(logger, LevelInfo, logger.prefix) }
 
 // Warn creates a context with level warn
-func (logger *Logger) Warn() *Context { return getContext(logger, LevelWarn) }
+func (logger *Logger) Warn() *Context { return getContext(logger, LevelWarn, logger.prefix) }
 
 // Error creates a context with level error
-func (logger *Logger) Error() *Context { return getContext(logger, LevelError) }
+func (logger *Logger) Error() *Context { return getContext(logger, LevelError, logger.prefix) }
 
 // Fatal creates a context with level fatal
-func (logger *Logger) Fatal() *Context { return getContext(logger, LevelFatal) }
+func (logger *Logger) Fatal() *Context { return getContext(logger, LevelFatal, logger.prefix) }
 
 // Log output log with specified level
 func (logger *Logger) Log(level Level, msg string) {
@@ -352,7 +352,7 @@ func (logger *Logger) Log(level Level, msg string) {
 }
 
 // Print is a low-level API to print log.
-func (logger *Logger) Print(calldepth int, level Level, prefix, msg string) {
+func (logger *Logger) Print(calldepth int, level Level, msg string) {
 	if logger.GetLevel() < level {
 		return
 	}
@@ -368,6 +368,10 @@ func (logger *Logger) Print(calldepth int, level Level, prefix, msg string) {
 
 // global logger
 var glogger = NewLogger("")
+
+func GlobalLogger() *Logger {
+	return glogger
+}
 
 // Start starts the global logger
 func Start(options ...Option) error {
@@ -400,22 +404,22 @@ func SetLevel(level Level) {
 }
 
 // Trace creates a context with level trace
-func Trace() *Context { return getContext(glogger, LevelTrace) }
+func Trace() *Context { return getContext(glogger, LevelTrace, glogger.prefix) }
 
 // Debug creates a context with level debug
-func Debug() *Context { return getContext(glogger, LevelDebug) }
+func Debug() *Context { return getContext(glogger, LevelDebug, glogger.prefix) }
 
 // Info creates a context with level info
-func Info() *Context { return getContext(glogger, LevelInfo) }
+func Info() *Context { return getContext(glogger, LevelInfo, glogger.prefix) }
 
 // Warn creates a context with level warn
-func Warn() *Context { return getContext(glogger, LevelWarn) }
+func Warn() *Context { return getContext(glogger, LevelWarn, glogger.prefix) }
 
 // Error creates a context with level error
-func Error() *Context { return getContext(glogger, LevelError) }
+func Error() *Context { return getContext(glogger, LevelError, glogger.prefix) }
 
 // Fatal creates a context with level fatal
-func Fatal() *Context { return getContext(glogger, LevelFatal) }
+func Fatal() *Context { return getContext(glogger, LevelFatal, glogger.prefix) }
 
 // Log output log with specified level
 func Log(level Level, msg string) {
@@ -433,7 +437,7 @@ func Log(level Level, msg string) {
 }
 
 // Print is a low-level API to print log.
-func Print(calldepth int, level Level, prefix, msg string) {
+func Print(calldepth int, level Level, msg string) {
 	if glogger.GetLevel() < level {
 		return
 	}
@@ -445,4 +449,82 @@ func Print(calldepth int, level Level, prefix, msg string) {
 		_, caller.Filename, caller.Line, _ = runtime.Caller(calldepth)
 	}
 	glogger.printer.Print(level, flags, caller, glogger.prefix, msg)
+}
+
+type ContextLogger struct {
+	logger *Logger
+	prefix string
+}
+
+func Prefix(logger *Logger, prefix string) *ContextLogger {
+	if logger == nil {
+		logger = glogger
+	}
+	if logger.prefix != "" {
+		prefix = logger.prefix + "/" + prefix
+	}
+	return &ContextLogger{
+		logger: logger,
+		prefix: prefix,
+	}
+}
+
+// Trace creates a context with level trace
+func (p *ContextLogger) Trace() *Context {
+	return getContext(p.logger, LevelTrace, p.prefix)
+}
+
+// Debug creates a context with level debug
+func (p *ContextLogger) Debug() *Context {
+	return getContext(p.logger, LevelDebug, p.prefix)
+}
+
+// Info creates a context with level info
+func (p *ContextLogger) Info() *Context {
+	return getContext(p.logger, LevelInfo, p.prefix)
+}
+
+// Warn creates a context with level warn
+func (p *ContextLogger) Warn() *Context {
+	return getContext(p.logger, LevelWarn, p.prefix)
+}
+
+// Error creates a context with level error
+func (p *ContextLogger) Error() *Context {
+	return getContext(p.logger, LevelError, p.prefix)
+}
+
+// Fatal creates a context with level fatal
+func (p *ContextLogger) Fatal() *Context {
+	return getContext(p.logger, LevelFatal, p.prefix)
+}
+
+// Log output log with specified level
+func (p *ContextLogger) Log(level Level, msg string) {
+	if p.logger.GetLevel() < level {
+		return
+	}
+	var (
+		caller Caller
+		flags  = p.logger.GetFlags()
+	)
+	if flags&(Lshortfile|Llongfile) != 0 {
+		_, caller.Filename, caller.Line, _ = runtime.Caller(1)
+	}
+	p.logger.printer.Print(level, flags, caller, p.prefix, msg)
+}
+
+// Print is a low-level API to print log.
+func (p *ContextLogger) Print(calldepth int, level Level, msg string) {
+	if p.logger.GetLevel() < level {
+		return
+	}
+	var (
+		caller Caller
+		flags  = p.logger.GetFlags()
+	)
+	if flags&(Lshortfile|Llongfile) != 0 {
+		_, caller.Filename, caller.Line, _ = runtime.Caller(calldepth)
+	}
+	p.logger.printer.Print(level, flags, caller, p.prefix, msg)
 }

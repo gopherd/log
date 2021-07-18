@@ -13,6 +13,7 @@ import (
 type Context struct {
 	logger  *Logger
 	level   Level
+	prefix  string
 	encoder encoder
 }
 
@@ -22,12 +23,12 @@ var ctxPool = sync.Pool{
 	},
 }
 
-func getContext(logger *Logger, level Level) *Context {
+func getContext(logger *Logger, level Level, prefix string) *Context {
 	if logger.GetLevel() < level {
 		return nil
 	}
 	ctx := ctxPool.Get().(*Context)
-	ctx.reset(logger, level)
+	ctx.reset(logger, level, prefix)
 	return ctx
 }
 
@@ -37,9 +38,10 @@ func putContext(ctx *Context) {
 	}
 }
 
-func (ctx *Context) reset(logger *Logger, level Level) {
+func (ctx *Context) reset(logger *Logger, level Level, prefix string) {
 	ctx.logger = logger
 	ctx.level = level
+	ctx.prefix = prefix
 	ctx.encoder.reset()
 }
 
@@ -58,7 +60,7 @@ func (ctx *Context) Print(msg string) {
 	if flags&(Lshortfile|Llongfile) != 0 {
 		_, caller.Filename, caller.Line, _ = runtime.Caller(1)
 	}
-	ctx.logger.printer.Print(ctx.level, flags, caller, ctx.logger.prefix, ctx.encoder.String())
+	ctx.logger.printer.Print(ctx.level, flags, caller, ctx.prefix, ctx.encoder.String())
 	putContext(ctx)
 }
 
