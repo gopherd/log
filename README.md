@@ -82,8 +82,8 @@ loglint used to check unfinished chain calls, e.g.
 // wrong
 log.Debug()                              // warning: result of github.com/gopherd/log.Debug call not used
 log.Prefix("pre").Trace()                // warning: result of (github.com/gopherd/log.Prefix).Trace call not used
-log.Debug().String("k", "v")             // warning: result of (*github.com/gopherd/log.Recorder).String call not used
-log.Debug().Int("i", 1).String("k", "v") // warning: result of (*github.com/gopherd/log.Recorder).String call not used
+log.Debug().String("k", "v")             // warning: result of (*github.com/gopherd/log.Context).String call not used
+log.Debug().Int("i", 1).String("k", "v") // warning: result of (*github.com/gopherd/log.Context).String call not used
 
 // right
 log.Debug().String("k", "v").Print("message")
