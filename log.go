@@ -469,6 +469,10 @@ func Prefix(logger *Logger, prefix string) *ContextLogger {
 	}
 }
 
+func (p *ContextLogger) Prefix() string {
+	return p.prefix
+}
+
 // Trace creates a context with level trace
 func (p *ContextLogger) Trace() *Context {
 	return getContext(p.logger, LevelTrace, p.prefix)
