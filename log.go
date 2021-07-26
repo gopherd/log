@@ -469,6 +469,10 @@ func Prefix(logger *Logger, prefix string) *ContextLogger {
 	}
 }
 
+func (p *ContextLogger) Logger() *Logger {
+	return p.logger
+}
+
 func (p *ContextLogger) Prefix() string {
 	return p.prefix
 }
