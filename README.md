@@ -5,7 +5,7 @@ LOG
 
 + lightweight: no any dependencies.
 + fast: formmating log message very fast.
-+ zero-memory: zero memory allocation while formmating log message.
++ zero-memory: zero memory allocation to formating message.
 + customizable: customize `Writer` and `Printer`.
 
 Getting started
@@ -60,8 +60,8 @@ func main() {
 		Error("error", errors.New("EOF")).
 		Print("something is wrong")
 
-	// Set header flags, all supported flags: Ldatetime, Llongfile, Lshortfile, LUTC
-	log.SetFlags(log.Ldatetime | log.Lshortfile | log.LUTC)
+	// Set header flags
+	log.SetFlags(log.Ltimstamp | log.Lshortfile | log.LUTC)
 
 	log.Fatal().Print("should be printed and exit program with status code 1")
 	log.Info().Print("You cannot see me")
@@ -81,7 +81,7 @@ loglint used to check unfinished chain calls, e.g.
 ```go
 // wrong
 log.Debug()                              // warning: result of github.com/gopherd/log.Debug call not used
-log.Prefix("pre").Trace()                // warning: result of (github.com/gopherd/log.Prefix).Trace call not used
+log.Trace()                              // warning: result of github.com/gopherd/log.Trace call not used
 log.Debug().String("k", "v")             // warning: result of (*github.com/gopherd/log.Context).String call not used
 log.Debug().Int("i", 1).String("k", "v") // warning: result of (*github.com/gopherd/log.Context).String call not used
 

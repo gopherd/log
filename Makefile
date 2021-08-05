@@ -1,10 +1,7 @@
-all: genslice genlintfuncs loglint benchmark
+all: genslice loglint benchmark
 
 genslice:
 	go run genslice.go > slice.go
-
-genlintfuncs:
-	./genlintfuncs.sh > analyzer/funcs.go
 
 loglint:
 	cd cmd/loglint && go install
