@@ -32,7 +32,7 @@ func (w *testingLogWriter) Close() error { return nil }
 func TestWriter(t *testing.T) {
 	writer := new(testingLogWriter)
 	log.Start(log.WithWriters(writer), log.WithLevel(log.LevelTrace))
-	log.Log(log.LevelTrace, "hello log")
+	log.Log(log.LevelTrace).Print("hello log")
 	log.Debug().Print("hello world")
 	log.Shutdown()
 	got := writer.buf.String()

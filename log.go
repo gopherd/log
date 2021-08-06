@@ -242,10 +242,11 @@ func WithMultiFile(multiFileOptions MultiFileOptions) Option {
 	return WithWriters(newMultiFile(multiFileOptions))
 }
 
+// Logger is the top-level object for outputing log message
 type Logger struct {
 	printer Printer
-	level   Level
 	prefix  string
+	level   int32
 	flags   int32
 }
 
@@ -253,7 +254,7 @@ type Logger struct {
 func NewLogger(prefix string) *Logger {
 	return &Logger{
 		printer: empty,
-		level:   LevelInfo,
+		level:   int32(LevelInfo),
 		prefix:  prefix,
 	}
 }
@@ -294,6 +295,7 @@ func (logger *Logger) Start(options ...Option) error {
 	return nil
 }
 
+// Shutdown shutdowns the logger
 func (logger *Logger) Shutdown() {
 	logger.printer.Shutdown()
 }
@@ -310,12 +312,12 @@ func (logger *Logger) SetFlags(flags int) {
 
 // GetLevel returns the log level
 func (logger *Logger) GetLevel() Level {
-	return Level(atomic.LoadInt32((*int32)(&logger.level)))
+	return Level(atomic.LoadInt32(&logger.level))
 }
 
 // SetLevel sets the log level
 func (logger *Logger) SetLevel(level Level) {
-	atomic.StoreInt32((*int32)(&logger.level), int32(level))
+	atomic.StoreInt32(&logger.level, int32(level))
 }
 
 // Trace creates a context with level trace
@@ -336,20 +338,8 @@ func (logger *Logger) Error() *Context { return getContext(logger, LevelError, l
 // Fatal creates a context with level fatal
 func (logger *Logger) Fatal() *Context { return getContext(logger, LevelFatal, logger.prefix) }
 
-// Log output log with specified level
-func (logger *Logger) Log(level Level, msg string) {
-	if logger.GetLevel() < level {
-		return
-	}
-	var (
-		caller Caller
-		flags  = logger.GetFlags()
-	)
-	if flags&(Lshortfile|Llongfile) != 0 {
-		_, caller.Filename, caller.Line, _ = runtime.Caller(1)
-	}
-	logger.printer.Print(level, flags, caller, logger.prefix, msg)
-}
+// Log creates a context with specified level
+func (logger *Logger) Log(level Level) *Context { return getContext(logger, level, logger.prefix) }
 
 // Print is a low-level API to print log.
 func (logger *Logger) Print(calldepth int, level Level, msg string) {
@@ -369,6 +359,7 @@ func (logger *Logger) Print(calldepth int, level Level, msg string) {
 // global logger
 var glogger = NewLogger("")
 
+// GlobalLogger returns the global logger
 func GlobalLogger() *Logger {
 	return glogger
 }
@@ -421,20 +412,8 @@ func Error() *Context { return getContext(glogger, LevelError, glogger.prefix) }
 // Fatal creates a context with level fatal
 func Fatal() *Context { return getContext(glogger, LevelFatal, glogger.prefix) }
 
-// Log output log with specified level
-func Log(level Level, msg string) {
-	if glogger.GetLevel() < level {
-		return
-	}
-	var (
-		caller Caller
-		flags  = glogger.GetFlags()
-	)
-	if flags&(Lshortfile|Llongfile) != 0 {
-		_, caller.Filename, caller.Line, _ = runtime.Caller(1)
-	}
-	glogger.printer.Print(level, flags, caller, glogger.prefix, msg)
-}
+// Log creates a context with specified level
+func Log(level Level) *Context { return getContext(glogger, level, glogger.prefix) }
 
 // Print is a low-level API to print log.
 func Print(calldepth int, level Level, msg string) {
@@ -451,11 +430,13 @@ func Print(calldepth int, level Level, msg string) {
 	glogger.printer.Print(level, flags, caller, glogger.prefix, msg)
 }
 
+// ContextLogger holds a prefixed logger
 type ContextLogger struct {
 	logger *Logger
 	prefix string
 }
 
+// Prefix creates a context logger with prefix
 func Prefix(logger *Logger, prefix string) *ContextLogger {
 	if logger == nil {
 		logger = glogger
@@ -469,10 +450,12 @@ func Prefix(logger *Logger, prefix string) *ContextLogger {
 	}
 }
 
+// Logger returns underlying logger
 func (p *ContextLogger) Logger() *Logger {
 	return p.logger
 }
 
+// Prefix returns prefix of context logger
 func (p *ContextLogger) Prefix() string {
 	return p.prefix
 }
@@ -507,19 +490,9 @@ func (p *ContextLogger) Fatal() *Context {
 	return getContext(p.logger, LevelFatal, p.prefix)
 }
 
-// Log output log with specified level
-func (p *ContextLogger) Log(level Level, msg string) {
-	if p.logger.GetLevel() < level {
-		return
-	}
-	var (
-		caller Caller
-		flags  = p.logger.GetFlags()
-	)
-	if flags&(Lshortfile|Llongfile) != 0 {
-		_, caller.Filename, caller.Line, _ = runtime.Caller(1)
-	}
-	p.logger.printer.Print(level, flags, caller, p.prefix, msg)
+// Log creates a context with specified level
+func (p *ContextLogger) Log(level Level) *Context {
+	return getContext(p.logger, level, p.prefix)
 }
 
 // Print is a low-level API to print log.
