@@ -52,7 +52,7 @@ func (level Level) index() int { return int(level - 1) }
 
 // Set implements flag.Value interface such that you can use level  as a command as following:
 //
-//	var level logger.Level
+//	var level log.Level
 //	flag.Var(&level, "log_level", "log level: trace/debug/info/warn/error/fatal")
 func (level *Level) Set(s string) error {
 	lv, ok := ParseLevel(s)
@@ -142,7 +142,7 @@ type options struct {
 	errors  []error
 }
 
-func defaultStartOptions() options {
+func defaultOptions() options {
 	return options{
 		flags: LdefaultFlags,
 		level: LevelInfo,
@@ -261,7 +261,7 @@ func NewLogger(prefix string) *Logger {
 
 // Start starts logging with options
 func (logger *Logger) Start(options ...Option) error {
-	var opt = defaultStartOptions()
+	var opt = defaultOptions()
 	opt.apply(options)
 	if len(opt.errors) > 0 {
 		for i := range opt.writers {

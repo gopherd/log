@@ -22,7 +22,7 @@ func init() {
 	const pkg = "github.com/gopherd/log"
 	checkTypes.Set("*" + pkg + ".Context")
 	Analyzer.Flags.Var(&checkTypes, "types",
-		"comma-separated list of types must be used when it is the uniqe result of some function")
+		"comma-separated list of types must be used when it is the unique result of some function")
 }
 
 var Analyzer = &analysis.Analyzer{
