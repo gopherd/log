@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-const DefaultCalldepth = 1
+const DefaultCalldepth = 2
 
 type Logger struct {
 	logger    *log.Logger
