@@ -356,78 +356,73 @@ func (logger *Logger) Print(calldepth int, level Level, msg string) {
 	logger.printer.Print(level, flags, caller, logger.prefix, msg)
 }
 
-// global logger
-var glogger = NewLogger("")
-
-// GlobalLogger returns the global logger
-func GlobalLogger() *Logger {
-	return glogger
-}
+// default global logger
+var DefaultLogger = NewLogger("")
 
 // Start starts the global logger
 func Start(options ...Option) error {
-	return glogger.Start(options...)
+	return DefaultLogger.Start(options...)
 }
 
 // Shutdown shutdowns the global logger
 func Shutdown() {
-	glogger.Shutdown()
+	DefaultLogger.Shutdown()
 }
 
 // GetFlags returns the output flags
 func GetFlags() {
-	glogger.GetFlags()
+	DefaultLogger.GetFlags()
 }
 
 // SetFlags sets the output flags
 func SetFlags(flags int) {
-	glogger.SetFlags(flags)
+	DefaultLogger.SetFlags(flags)
 }
 
 // GetLevel returns the log level
 func GetLevel() Level {
-	return glogger.GetLevel()
+	return DefaultLogger.GetLevel()
 }
 
 // SetLevel sets the log level
 func SetLevel(level Level) {
-	glogger.SetLevel(level)
+	DefaultLogger.SetLevel(level)
 }
 
 // Trace creates a context with level trace
-func Trace() *Context { return getContext(glogger, LevelTrace, glogger.prefix) }
+func Trace() *Context { return getContext(DefaultLogger, LevelTrace, DefaultLogger.prefix) }
 
 // Debug creates a context with level debug
-func Debug() *Context { return getContext(glogger, LevelDebug, glogger.prefix) }
+func Debug() *Context { return getContext(DefaultLogger, LevelDebug, DefaultLogger.prefix) }
 
 // Info creates a context with level info
-func Info() *Context { return getContext(glogger, LevelInfo, glogger.prefix) }
+func Info() *Context { return getContext(DefaultLogger, LevelInfo, DefaultLogger.prefix) }
 
 // Warn creates a context with level warn
-func Warn() *Context { return getContext(glogger, LevelWarn, glogger.prefix) }
+func Warn() *Context { return getContext(DefaultLogger, LevelWarn, DefaultLogger.prefix) }
 
 // Error creates a context with level error
-func Error() *Context { return getContext(glogger, LevelError, glogger.prefix) }
+func Error() *Context { return getContext(DefaultLogger, LevelError, DefaultLogger.prefix) }
 
 // Fatal creates a context with level fatal
-func Fatal() *Context { return getContext(glogger, LevelFatal, glogger.prefix) }
+func Fatal() *Context { return getContext(DefaultLogger, LevelFatal, DefaultLogger.prefix) }
 
 // Log creates a context with specified level
-func Log(level Level) *Context { return getContext(glogger, level, glogger.prefix) }
+func Log(level Level) *Context { return getContext(DefaultLogger, level, DefaultLogger.prefix) }
 
 // Print is a low-level API to print log.
 func Print(calldepth int, level Level, msg string) {
-	if glogger.GetLevel() < level {
+	if DefaultLogger.GetLevel() < level {
 		return
 	}
 	var (
 		caller Caller
-		flags  = glogger.GetFlags()
+		flags  = DefaultLogger.GetFlags()
 	)
 	if flags&(Lshortfile|Llongfile) != 0 {
 		_, caller.Filename, caller.Line, _ = runtime.Caller(calldepth)
 	}
-	glogger.printer.Print(level, flags, caller, glogger.prefix, msg)
+	DefaultLogger.printer.Print(level, flags, caller, DefaultLogger.prefix, msg)
 }
 
 // ContextLogger holds a prefixed logger
@@ -439,7 +434,7 @@ type ContextLogger struct {
 // Prefix creates a context logger with prefix
 func Prefix(logger *Logger, prefix string) *ContextLogger {
 	if logger == nil {
-		logger = glogger
+		logger = DefaultLogger
 	}
 	if logger.prefix != "" {
 		prefix = logger.prefix + "/" + prefix
