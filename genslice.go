@@ -1,4 +1,6 @@
+//go:build gopherd_log_genslice
 // +build gopherd_log_genslice
+
 //
 // command to generate slice.go:
 //
@@ -37,7 +39,7 @@ func t(name string) scalar {
 	}
 }
 
-func p(a ...interface{}) {
+func p(a ...any) {
 	for i := range a {
 		fmt.Print(a[i])
 	}

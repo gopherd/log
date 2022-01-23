@@ -18,7 +18,7 @@ type Context struct {
 }
 
 var ctxPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return new(Context)
 	},
 }
@@ -220,7 +220,7 @@ func (ctx *Context) Error(key string, value error) *Context {
 	return ctx
 }
 
-func (ctx *Context) Any(key string, value interface{}) *Context {
+func (ctx *Context) Any(key string, value any) *Context {
 	if ctx != nil {
 		ctx.encoder.encodeKey(key)
 		if value == nil {
@@ -245,7 +245,7 @@ func (ctx *Context) Any(key string, value interface{}) *Context {
 	return ctx
 }
 
-func (ctx *Context) Type(key string, value interface{}) *Context {
+func (ctx *Context) Type(key string, value any) *Context {
 	if ctx != nil {
 		ctx.encoder.encodeKey(key)
 		if value == nil {
