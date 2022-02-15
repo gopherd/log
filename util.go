@@ -161,7 +161,7 @@ func (enc *encoder) encodeComplex128(c complex128) {
 	enc.encodeComplex(r, i, 64)
 }
 
-func (enc *encoder) encodeScalar(value any) bool {
+func (enc *encoder) encodeScalar(value interface{}) bool {
 	switch x := value.(type) {
 	case int:
 		enc.encodeInt(int64(x))

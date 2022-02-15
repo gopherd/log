@@ -39,7 +39,7 @@ func t(name string) scalar {
 	}
 }
 
-func p(a ...any) {
+func p(a ...interface{}) {
 	for i := range a {
 		fmt.Print(a[i])
 	}
