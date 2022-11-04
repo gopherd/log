@@ -42,7 +42,7 @@ func TestWriter(t *testing.T) {
 	}
 }
 
-func ExampleContext() {
+func ExampleLog() {
 	writer := new(testingLogWriter)
 	logger := log.NewLogger("testing")
 	logger.Start(log.WithWriters(writer), log.WithLevel(log.LevelInfo))
@@ -96,6 +96,8 @@ func ExampleContext() {
 	logger.Info().Strings("strings", []string{"x", "x y", "z"}).Print("ctx")
 	logger.Info().Bytes("bytes", []byte{'1', '3', 'x'}).Print("ctx")
 	logger.Debug().String("key", "value").Print("not output")
+	logger.If(true).Info().String("key", "value").Print("should be printed")
+	logger.If(false).Info().String("key", "value").Print("should not be printed")
 	logger.Shutdown()
 	fmt.Print(writer.buf.String())
 	// Output:

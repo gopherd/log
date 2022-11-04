@@ -1,6 +1,7 @@
 package log
 
 import (
+	"errors"
 	"os"
 	"runtime"
 	"strings"
@@ -9,17 +10,18 @@ import (
 	"time"
 )
 
+// Caller holds caller information
 type Caller struct {
 	Filename string
 	Line     int
 }
 
-// Printer represents the printer for logging
-type Printer interface {
-	// Start starts the printer
-	Start()
-	// Shutdown shutdowns the printer
-	Shutdown()
+// Provider represents the provider for logging
+type Provider interface {
+	// Start starts the provider
+	Start() error
+	// Shutdown shutdowns the provider
+	Shutdown() error
 	// Print outputs leveled logs with file, line and extra prefix.
 	// If line <= 0, then file and line both are invalid.
 	Print(level Level, flags int, caller Caller, prefix, msg string)
@@ -46,8 +48,8 @@ func stack(calldepth int) []byte {
 	return e[startIndex:nbytes]
 }
 
-// printer implements Printer
-type printer struct {
+// provider implements Provider
+type provider struct {
 	writer Writer
 
 	entryListLocker sync.Mutex
@@ -55,10 +57,10 @@ type printer struct {
 
 	async bool
 
-	// used if async==false
+	// used for async==false
 	writeLocker sync.Mutex
 
-	// used if async==true
+	// used for async==true
 	running int32
 	queue   *queue
 	queueMu sync.Mutex
@@ -68,9 +70,9 @@ type printer struct {
 	wait    chan struct{}
 }
 
-// newPrinter creates built in printer
-func newPrinter(writer Writer, async bool) Printer {
-	p := &printer{
+// newProvider creates built in provider
+func newProvider(writer Writer, async bool) Provider {
+	p := &provider{
 		writer:    writer,
 		entryList: new(entry),
 		async:     async,
@@ -85,18 +87,19 @@ func newPrinter(writer Writer, async bool) Printer {
 	return p
 }
 
-// Start implements Printer Start method
-func (p *printer) Start() {
+// Start implements Provider Start method
+func (p *provider) Start() error {
 	if p.queue == nil {
-		return
+		return errors.New("queue is nil")
 	}
 	if !atomic.CompareAndSwapInt32(&p.running, 0, 1) {
-		return
+		return errors.New("provider already running")
 	}
 	go p.run()
+	return nil
 }
 
-func (p *printer) run() {
+func (p *provider) run() {
 	for {
 		p.cond.L.Lock()
 		if p.queue.size() == 0 {
@@ -111,7 +114,7 @@ func (p *printer) run() {
 	}
 }
 
-func (p *printer) consumeSignals() bool {
+func (p *provider) consumeSignals() bool {
 	for {
 		select {
 		case resp := <-p.flush:
@@ -128,35 +131,36 @@ func (p *printer) consumeSignals() bool {
 	}
 }
 
-func (p *printer) flushAll() {
+func (p *provider) flushAll() {
 	p.cond.L.Lock()
 	entries := p.queue.popAll()
 	p.cond.L.Unlock()
 	p.writeEntries(entries)
 }
 
-func (p *printer) writeEntries(entries []*entry) {
+func (p *provider) writeEntries(entries []*entry) {
 	for _, e := range entries {
 		p.writeEntry(e)
 	}
 }
 
-// Shutdown implements Printer Shutdown method
-func (p *printer) Shutdown() {
+// Shutdown implements Provider Shutdown method
+func (p *provider) Shutdown() error {
 	if p.queue == nil {
-		return
+		return nil
 	}
 	if !atomic.CompareAndSwapInt32(&p.running, 1, 0) {
-		return
+		return nil
 	}
 	close(p.quit)
 	p.cond.Signal()
 	<-p.wait
 	p.writer.Close()
+	return nil
 }
 
-// Print implements Printer Print method
-func (p *printer) Print(level Level, flags int, caller Caller, prefix, msg string) {
+// Print implements Provider Print method
+func (p *provider) Print(level Level, flags int, caller Caller, prefix, msg string) {
 	p.output(level, flags, caller, prefix, msg)
 	if level == LevelFatal {
 		p.Shutdown()
@@ -164,12 +168,12 @@ func (p *printer) Print(level Level, flags int, caller Caller, prefix, msg strin
 	}
 }
 
-func (p *printer) writeEntry(e *entry) {
+func (p *provider) writeEntry(e *entry) {
 	p.writer.Write(e.level, e.buf.Bytes(), e.header)
 	p.putEntry(e)
 }
 
-func (p *printer) getEntry() *entry {
+func (p *provider) getEntry() *entry {
 	p.entryListLocker.Lock()
 	if b := p.entryList; b != nil {
 		p.entryList = b.next
@@ -182,7 +186,7 @@ func (p *printer) getEntry() *entry {
 	return new(entry)
 }
 
-func (p *printer) putEntry(e *entry) {
+func (p *provider) putEntry(e *entry) {
 	if e.buf.Len() > 256 {
 		return
 	}
@@ -193,7 +197,7 @@ func (p *printer) putEntry(e *entry) {
 }
 
 // [L yyyy/MM/dd hh:mm:ss.uuu file:line]
-func (p *printer) formatHeader(level Level, caller Caller, flags int) *entry {
+func (p *provider) formatHeader(level Level, caller Caller, flags int) *entry {
 	var (
 		e   = p.getEntry()
 		off int
@@ -246,7 +250,7 @@ func (p *printer) formatHeader(level Level, caller Caller, flags int) *entry {
 	return e
 }
 
-func (p *printer) output(level Level, flags int, caller Caller, prefix, msg string) {
+func (p *provider) output(level Level, flags int, caller Caller, prefix, msg string) {
 	if flags&(Lshortfile|Llongfile) != 0 {
 		if caller.Line <= 0 {
 			caller.Filename = "???"
@@ -292,10 +296,10 @@ func (p *printer) output(level Level, flags int, caller Caller, prefix, msg stri
 	}
 }
 
-type emptyPrinter struct{}
+type emptyProvider struct{}
 
-var empty Printer = emptyPrinter{}
+var empty Provider = emptyProvider{}
 
-func (emptyPrinter) Start()                                                          {}
-func (emptyPrinter) Shutdown()                                                       {}
-func (emptyPrinter) Print(level Level, flags int, caller Caller, prefix, msg string) {}
+func (emptyProvider) Start() error                                { return nil }
+func (emptyProvider) Shutdown() error                             { return nil }
+func (emptyProvider) Print(_ Level, _ int, _ Caller, _, _ string) {}
