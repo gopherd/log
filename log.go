@@ -3,6 +3,7 @@ package log
 import (
 	"errors"
 	"io"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -64,6 +65,10 @@ func (level *Level) Set(s string) error {
 		return errUnrecognizedLevel
 	}
 	return nil
+}
+
+func (level *Level) Decode(s string) error {
+	return level.Set(s)
 }
 
 // Literal returns literal value which is a number
@@ -406,7 +411,11 @@ func (logger *Logger) Print(calldepth int, level Level, msg string) {
 }
 
 // default global logger
-var DefaultLogger = NewLogger("")
+var DefaultLogger = func() *Logger {
+	var logger = NewLogger("")
+	logger.Start(WithSync(true), WithOutput(os.Stderr), WithLevel(LevelDebug))
+	return logger
+}()
 
 // Start starts the global logger
 func Start(options ...Option) error {
