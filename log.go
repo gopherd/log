@@ -257,6 +257,17 @@ type Printer interface {
 	Print(int, Level, string) // Print is a low-level API to print log.
 }
 
+type emptyPrinter struct{}
+
+func (emptyPrinter) Trace() *Context          { return nil }
+func (emptyPrinter) Debug() *Context          { return nil }
+func (emptyPrinter) Info() *Context           { return nil }
+func (emptyPrinter) Warn() *Context           { return nil }
+func (emptyPrinter) Error() *Context          { return nil }
+func (emptyPrinter) Fatal() *Context          { return nil }
+func (emptyPrinter) Log(Level) *Context       { return nil }
+func (emptyPrinter) Print(int, Level, string) {}
+
 // Logger is the top-level object for outputing log message
 type Logger struct {
 	provider Provider
@@ -355,7 +366,7 @@ func (logger *Logger) If(ok bool) Printer {
 	if ok {
 		return logger
 	}
-	return nil
+	return emptyPrinter{}
 }
 
 // Trace creates a context with level trace
@@ -432,7 +443,7 @@ func If(ok bool) Printer {
 	if ok {
 		return DefaultLogger
 	}
-	return nil
+	return emptyPrinter{}
 }
 
 // Trace creates a context with level trace
