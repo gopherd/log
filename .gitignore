@@ -6,6 +6,3 @@
 .vscode/
 .idea/
 *.exe
-
-/cmd/loglint/loglint
-/cmd/loglint/loglint.exe

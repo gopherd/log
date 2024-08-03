@@ -10,12 +10,6 @@ import (
 	"time"
 )
 
-// Caller holds caller information
-type Caller struct {
-	Filename string
-	Line     int
-}
-
 // Provider represents the provider for logging
 type Provider interface {
 	// Start starts the provider

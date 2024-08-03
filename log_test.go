@@ -137,6 +137,7 @@ func ExampleLog() {
 	// [INFO] (testing) {int32s:[1,3,5]} ctx
 	// [INFO] (testing) {strings:["x","x y","z"]} ctx
 	// [INFO] (testing) {bytes:0x313378} ctx
+	// [INFO] (testing) {key:"value"} should be printed
 }
 
 func benchmarkSetup(b *testing.B, caller, off bool) {

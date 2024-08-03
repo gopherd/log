@@ -2,6 +2,7 @@ package log
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"runtime"
@@ -140,11 +141,16 @@ func ParseLevel(s string) (lv Level, ok bool) {
 	return LevelInfo, false
 }
 
+// Caller holds caller information
+type Caller struct {
+	Filename string
+	Line     int
+}
+
 type options struct {
 	flags    int
 	sync     bool
 	level    Level
-	prefix   string
 	provider Provider
 	writers  []Writer
 	errors   []error
@@ -374,23 +380,72 @@ func (logger *Logger) If(ok bool) Printer {
 	return emptyPrinter{}
 }
 
+func (logger *Logger) logf(level Level, format string, args ...interface{}) {
+	if logger.GetLevel() < level {
+		return
+	}
+	var (
+		caller Caller
+		flags  = logger.GetFlags()
+	)
+	if flags&(Lshortfile|Llongfile) != 0 {
+		_, caller.Filename, caller.Line, _ = runtime.Caller(2)
+	}
+	logger.provider.Print(level, flags, caller, logger.prefix, fmt.Sprintf(format, args...))
+}
+
+// Logf prints log with format
+func (logger *Logger) Logf(level Level, format string, args ...interface{}) {
+	logger.logf(level, format, args...)
+}
+
 // Trace creates a context with level trace
 func (logger *Logger) Trace() *Context { return getContext(logger, LevelTrace, logger.prefix) }
+
+// Tracef prints log with level trace and format
+func (logger *Logger) Tracef(format string, args ...interface{}) {
+	logger.logf(LevelTrace, format, args...)
+}
 
 // Debug creates a context with level debug
 func (logger *Logger) Debug() *Context { return getContext(logger, LevelDebug, logger.prefix) }
 
+// Debugf prints log with level debug and format
+func (logger *Logger) Debugf(format string, args ...interface{}) {
+	logger.logf(LevelDebug, format, args...)
+}
+
 // Info creates a context with level info
 func (logger *Logger) Info() *Context { return getContext(logger, LevelInfo, logger.prefix) }
+
+// Infof prints log with level info and format
+func (logger *Logger) Infof(format string, args ...interface{}) {
+	logger.logf(LevelInfo, format, args...)
+}
 
 // Warn creates a context with level warn
 func (logger *Logger) Warn() *Context { return getContext(logger, LevelWarn, logger.prefix) }
 
+// Warnf prints log with level warn and format
+func (logger *Logger) Warnf(format string, args ...interface{}) {
+	logger.logf(LevelWarn, format, args...)
+}
+
 // Error creates a context with level error
 func (logger *Logger) Error() *Context { return getContext(logger, LevelError, logger.prefix) }
 
+// Errorf prints log with level error and format
+func (logger *Logger) Errorf(format string, args ...interface{}) {
+	logger.logf(LevelError, format, args...)
+}
+
 // Fatal creates a context with level fatal
 func (logger *Logger) Fatal() *Context { return getContext(logger, LevelFatal, logger.prefix) }
+
+// Fatalf prints log with level fatal and format
+func (logger *Logger) Fatalf(format string, args ...interface{}) {
+	logger.logf(LevelFatal, format, args...)
+}
 
 // Log creates a context with specified level
 func (logger *Logger) Log(level Level) *Context { return getContext(logger, level, logger.prefix) }
