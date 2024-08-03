@@ -1,91 +1,13 @@
-LOG
-===
+## Project Status: Archived
 
-`log` is a structured logger library. We have following key features:
+**This project is no longer actively maintained.**
 
-+ lightweight: no any dependencies.
-+ fast: formmating log message very fast.
-+ zero-memory: zero memory allocation to formating message.
-+ customizable: customize `Writer` and `Printer`.
+We recommend using the `log/slog` package from the Go standard library as a more robust and actively maintained alternative for structured logging.
 
-Getting started
----------------
+For more information, please refer to the [official Go documentation for log/slog](https://pkg.go.dev/log/slog).
 
-Install:
+Thank you to all who have used and supported this project.
 
-```
-go get github.com/gopherd/log
-```
+---
 
-```go
-package main
-
-import (
-	"errors"
-	"time"
-
-	"github.com/gopherd/log"
-)
-
-func main() {
-	// Start and defer Shutdown
-	if err := log.Start(log.WithConsole()); err != nil {
-		panic(err)
-	}
-	defer log.Shutdown()
-
-	// Default log level is log.LvINFO, you can change the level as following:
-	//
-	//	log.SetLevel(log.LvTRACE)
-	// 	log.SetLevel(log.LvDEBUG)
-	// 	log.SetLevel(log.LvINFO)
-	// 	log.SetLevel(log.LvWARN)
-	// 	log.SetLevel(log.LvERROR)
-	// 	log.SetLevel(log.LvFATAL)
-	log.SetLevel(log.LvTRACE)
-
-	log.Trace().Print("verbose message")
-	log.Debug().
-		Int("id", 123).
-		String("name", "gopherd").
-		Print("debug message")
-
-	log.Info().
-		Int32("i32", -12).
-		Print("important message")
-	log.Warn().
-		Duration("duration", time.Second).
-		Print("warning: cost to much time")
-	log.Error().
-		Error("error", errors.New("EOF")).
-		Print("something is wrong")
-
-	// Set header flags
-	log.SetFlags(log.Ltimstamp | log.Lshortfile | log.LUTC)
-
-	log.Fatal().Print("should be printed and exit program with status code 1")
-	log.Info().Print("You cannot see me")
-}
-```
-
-## Linter: [loglint](https://github.com/gopherd/log/tree/main/cmd/loglint)
-
-install loglint:
-
-```
-go install github.com/gopherd/log/cmd/loglint
-```
-
-loglint used to check unfinished chain calls, e.g.
-
-```go
-// wrong
-log.Debug()                              // warning: result of github.com/gopherd/log.Debug call not used
-log.Trace()                              // warning: result of github.com/gopherd/log.Trace call not used
-log.Debug().String("k", "v")             // warning: result of (*github.com/gopherd/log.Context).String call not used
-log.Debug().Int("i", 1).String("k", "v") // warning: result of (*github.com/gopherd/log.Context).String call not used
-
-// right
-log.Debug().String("k", "v").Print("message")
-log.Debug().Print("message")
-```
+If you're looking for a structured logging solution in Go, please consider using `log/slog` or other actively maintained libraries.
